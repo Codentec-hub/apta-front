@@ -1,6 +1,6 @@
 # Sistema Apta — Frontend
 
-Frontend em Next.js (App Router) + MUI, consumindo a API do backend em `../backend`.
+Frontend em Next.js (App Router) + MUI, consumindo a API do [apta-back](https://github.com/Codentec-hub/apta-back).
 
 ## Desenvolvimento
 
@@ -10,7 +10,7 @@ npm install
 npm run dev
 ```
 
-Acesse http://localhost:3000. É necessário que o backend esteja rodando (ver `../backend/README.md` ou a raiz do projeto).
+Acesse http://localhost:3000. É necessário que o backend esteja rodando (ver o README do [apta-back](https://github.com/Codentec-hub/apta-back)).
 
 ## Scripts
 

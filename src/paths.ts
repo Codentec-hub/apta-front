@@ -1,0 +1,19 @@
+export const paths = {
+  home: '/',
+  auth: { signIn: '/login' },
+  dashboard: {
+    overview: '/dashboard',
+    clientes: '/dashboard/clientes',
+    obrigacoes: '/dashboard/obrigacoes',
+    demandas: '/dashboard/demandas',
+    atendimento: '/dashboard/atendimento',
+    fiscal: '/dashboard/fiscal',
+    folha: '/dashboard/folha',
+    financeiro: '/dashboard/financeiro',
+    contabil: '/dashboard/contabil',
+    automacao: '/dashboard/automacao',
+    integracoes: '/dashboard/integracoes',
+    usuarios: '/dashboard/usuarios',
+    setores: '/dashboard/setores',
+  },
+} as const;

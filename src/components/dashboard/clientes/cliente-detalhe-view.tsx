@@ -37,6 +37,7 @@ import type {
 } from '@/types/domain';
 
 import { ClienteFormDialog } from './cliente-form-dialog';
+import { ContatosEmpresa } from './contatos-empresa';
 import { ObrigacaoFormDialog } from '../obrigacoes/obrigacao-form-dialog';
 import { ObrigacoesDaEmpresa } from '../obrigacoes/obrigacoes-da-empresa';
 import { DemandaFormDialog } from '../demandas/demanda-form-dialog';
@@ -162,7 +163,9 @@ export function ClienteDetalheView({ clienteId }: ClienteDetalheViewProps): Reac
         <Stack direction="row" sx={{ alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: 2 }}>
           <Stack spacing={0.5}>
             <Stack direction="row" spacing={1} sx={{ alignItems: 'center' }}>
-              <Typography variant="h4">{cliente.razaoSocial}</Typography>
+              <Typography variant="h4">
+                [{cliente.codigo}] {cliente.razaoSocial}
+              </Typography>
               <Chip
                 label={cliente.ativo ? 'Ativo' : 'Inativo'}
                 color={cliente.ativo ? 'success' : 'default'}
@@ -173,6 +176,7 @@ export function ClienteDetalheView({ clienteId }: ClienteDetalheViewProps): Reac
             <Typography color="text.secondary" variant="body2">
               {cliente.cnpj} {cliente.regimeTributario ? `· ${cliente.regimeTributario}` : ''}
               {cliente.nomeFantasia ? ` · ${cliente.nomeFantasia}` : ''}
+              {cliente.cidade ? ` · ${cliente.cidade}${cliente.uf ? `/${cliente.uf}` : ''}` : ''}
             </Typography>
           </Stack>
           <Button variant="outlined" startIcon={<PencilSimpleIcon />} onClick={() => setDialogClienteAberto(true)}>
@@ -197,6 +201,8 @@ export function ClienteDetalheView({ clienteId }: ClienteDetalheViewProps): Reac
           </Stack>
         )}
       </Stack>
+
+      <ContatosEmpresa clienteId={cliente.id} setores={setores} />
 
       <ObrigacoesDaEmpresa
         cliente={cliente}

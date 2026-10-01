@@ -2,6 +2,7 @@ import type { Icon } from '@phosphor-icons/react/dist/lib/types';
 import { BankIcon } from '@phosphor-icons/react/dist/ssr/Bank';
 import { BuildingsIcon } from '@phosphor-icons/react/dist/ssr/Buildings';
 import { CalculatorIcon } from '@phosphor-icons/react/dist/ssr/Calculator';
+import { CalendarIcon } from '@phosphor-icons/react/dist/ssr/Calendar';
 import { ClipboardTextIcon } from '@phosphor-icons/react/dist/ssr/ClipboardText';
 import { HeadsetIcon } from '@phosphor-icons/react/dist/ssr/Headset';
 import { HouseIcon } from '@phosphor-icons/react/dist/ssr/House';
@@ -23,6 +24,7 @@ export const navIcons = {
   wallet: WalletIcon,
   bank: BankIcon,
   calculator: CalculatorIcon,
+  calendar: CalendarIcon,
   robot: RobotIcon,
   'plugs-connected': PlugsConnectedIcon,
   'users-three': UsersThreeIcon,

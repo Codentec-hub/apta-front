@@ -136,7 +136,7 @@ export function ClientesView(): React.JSX.Element {
       </Stack>
 
       <TextField
-        label="Buscar por razão social ou CNPJ"
+        label="Buscar por nome, CNPJ ou ID"
         size="small"
         value={busca}
         onChange={(event) => setBusca(event.target.value)}

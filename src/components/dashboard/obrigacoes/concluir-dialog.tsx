@@ -3,18 +3,24 @@
 import * as React from 'react';
 import Alert from '@mui/material/Alert';
 import Button from '@mui/material/Button';
+import Chip from '@mui/material/Chip';
 import Dialog from '@mui/material/Dialog';
 import DialogActions from '@mui/material/DialogActions';
 import DialogContent from '@mui/material/DialogContent';
 import DialogTitle from '@mui/material/DialogTitle';
+import Divider from '@mui/material/Divider';
 import Stack from '@mui/material/Stack';
 import TextField from '@mui/material/TextField';
 import Typography from '@mui/material/Typography';
 import { DatePicker } from '@mui/x-date-pickers/DatePicker';
+import { PaperclipIcon } from '@phosphor-icons/react/dist/ssr/Paperclip';
 import dayjs, { type Dayjs } from 'dayjs';
 
 import { api } from '@/lib/api';
+import { anexarDocumento, formatarTamanho } from '@/lib/documentos-entrega';
 import type { Obrigacao } from '@/types/domain';
+
+import { destinatariosPadrao, SeletorDestinatarios, useContatosDaEmpresa } from './documentos-entrega-dialog';
 
 export interface ConcluirDialogProps {
   open: boolean;
@@ -29,6 +35,12 @@ export function ConcluirDialog({ open, obrigacao, onClose, onSaved }: ConcluirDi
   const [comentario, setComentario] = React.useState('');
   const [salvando, setSalvando] = React.useState(false);
   const [erro, setErro] = React.useState<string | null>(null);
+  // Entrega com documento (modelo Acessórias): anexa a guia/declaração e já
+  // gera o protocolo para os contatos que recebem este departamento.
+  const [arquivos, setArquivos] = React.useState<File[]>([]);
+  const [destinatarios, setDestinatarios] = React.useState<Set<string>>(new Set());
+  const inputArquivo = React.useRef<HTMLInputElement>(null);
+  const contatos = useContatosDaEmpresa(obrigacao?.clienteId ?? null, open);
 
   React.useEffect(() => {
     if (open) {
@@ -36,8 +48,13 @@ export function ConcluirDialog({ open, obrigacao, onClose, onSaved }: ConcluirDi
       setEntregueEm(dayjs());
       setComentario(obrigacao?.tipo?.comentarioPadrao ?? '');
       setErro(null);
+      setArquivos([]);
     }
   }, [open, obrigacao]);
+
+  React.useEffect(() => {
+    if (contatos && obrigacao) setDestinatarios(destinatariosPadrao(contatos, obrigacao.setorId));
+  }, [contatos, obrigacao]);
 
   if (!obrigacao) {
     return null;
@@ -51,6 +68,15 @@ export function ConcluirDialog({ open, obrigacao, onClose, onSaved }: ConcluirDi
     setSalvando(true);
     setErro(null);
     try {
+      // Anexa antes de concluir: se um upload falhar, a entrega não fica
+      // marcada sem o documento.
+      for (const arquivo of arquivos) await anexarDocumento(obrigacao.id, arquivo);
+      if (arquivos.length > 0 && destinatarios.size > 0) {
+        await api(`/obrigacoes/${obrigacao.id}/protocolos`, {
+          method: 'POST',
+          body: JSON.stringify({ contatoIds: [...destinatarios] }),
+        });
+      }
       const atualizada = await api<Obrigacao>(`/obrigacoes/${obrigacao.id}/concluir`, {
         method: 'POST',
         body: JSON.stringify({
@@ -73,7 +99,7 @@ export function ConcluirDialog({ open, obrigacao, onClose, onSaved }: ConcluirDi
   }
 
   return (
-    <Dialog open={open} onClose={onClose} maxWidth="xs" fullWidth>
+    <Dialog open={open} onClose={onClose} maxWidth="sm" fullWidth>
       <DialogTitle>Registrar entrega</DialogTitle>
       <Stack component="form" onSubmit={confirmar}>
         <DialogContent>
@@ -110,12 +136,58 @@ export function ConcluirDialog({ open, obrigacao, onClose, onSaved }: ConcluirDi
               minRows={2}
               fullWidth
             />
+
+            <Divider />
+            <Stack direction="row" sx={{ alignItems: 'center', justifyContent: 'space-between' }}>
+              <Typography variant="subtitle2">Documentos para o cliente</Typography>
+              <Button size="small" startIcon={<PaperclipIcon />} onClick={() => inputArquivo.current?.click()}>
+                Anexar
+              </Button>
+              <input
+                ref={inputArquivo}
+                type="file"
+                multiple
+                hidden
+                onChange={(event) => {
+                  const novos = [...(event.target.files ?? [])];
+                  setArquivos((atual) => [...atual, ...novos]);
+                  event.target.value = '';
+                }}
+              />
+            </Stack>
+            {arquivos.length === 0 ? (
+              <Typography variant="caption" color="text.secondary">
+                Opcional. Anexe a guia/declaração para gerar o protocolo de entrega ao cliente.
+              </Typography>
+            ) : (
+              <>
+                <Stack direction="row" sx={{ flexWrap: 'wrap', gap: 1 }}>
+                  {arquivos.map((a, i) => (
+                    <Chip
+                      key={`${a.name}-${i}`}
+                      size="small"
+                      label={`${a.name} (${formatarTamanho(a.size)})`}
+                      onDelete={() => setArquivos((atual) => atual.filter((_, j) => j !== i))}
+                    />
+                  ))}
+                </Stack>
+                <Typography variant="body2">
+                  Enviar para (marcados os que recebem <strong>{obrigacao.setor.nome}</strong>):
+                </Typography>
+                <SeletorDestinatarios
+                  contatos={contatos}
+                  setorId={obrigacao.setorId}
+                  selecionados={destinatarios}
+                  onChange={setDestinatarios}
+                />
+              </>
+            )}
           </Stack>
         </DialogContent>
         <DialogActions>
           <Button onClick={onClose}>Cancelar</Button>
           <Button type="submit" variant="contained" disabled={salvando}>
-            Marcar como entregue
+            {arquivos.length > 0 && destinatarios.size > 0 ? 'Entregar e gerar protocolo' : 'Marcar como entregue'}
           </Button>
         </DialogActions>
       </Stack>

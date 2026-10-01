@@ -68,7 +68,12 @@ export function ClientesView(): React.JSX.Element {
       return clientes;
     }
     return clientes.filter(
-      (c) => c.razaoSocial.toLowerCase().includes(termo) || c.cnpj.toLowerCase().includes(termo)
+      (c) =>
+        c.razaoSocial.toLowerCase().includes(termo) ||
+        c.cnpj.toLowerCase().includes(termo) ||
+        (c.nomeFantasia ?? '').toLowerCase().includes(termo) ||
+        (c.apelido ?? '').toLowerCase().includes(termo) ||
+        String(c.codigo) === termo.replace(/^0+/, '')
     );
   }, [clientes, busca]);
 
@@ -144,6 +149,7 @@ export function ClientesView(): React.JSX.Element {
             <TableRow>
               <TableCell>Razão social</TableCell>
               <TableCell>CNPJ</TableCell>
+              <TableCell>Cidade</TableCell>
               <TableCell>Regime</TableCell>
               <TableCell>Responsáveis</TableCell>
               <TableCell align="center">Ativo</TableCell>
@@ -153,7 +159,7 @@ export function ClientesView(): React.JSX.Element {
           <TableBody>
             {!carregando && clientesFiltrados.length === 0 ? (
               <TableRow>
-                <TableCell colSpan={6}>
+                <TableCell colSpan={7}>
                   <Typography color="text.secondary" variant="body2" sx={{ fontStyle: 'italic' }}>
                     {clientes.length === 0 ? 'Nenhum cliente cadastrado ainda.' : 'Nenhum cliente encontrado.'}
                   </Typography>
@@ -164,15 +170,23 @@ export function ClientesView(): React.JSX.Element {
                 <TableRow key={cliente.id} hover>
                   <TableCell>
                     <Link component={RouterLink} href={`${paths.dashboard.clientes}/${cliente.id}`} variant="body2">
-                      {cliente.razaoSocial}
+                      {cliente.razaoSocial} [{String(cliente.codigo).padStart(3, '0')}]
                     </Link>
                     {cliente.nomeFantasia ? (
-                      <Typography color="text.secondary" variant="caption">
+                      <Typography color="text.secondary" variant="caption" sx={{ display: 'block' }}>
                         {cliente.nomeFantasia}
                       </Typography>
                     ) : null}
                   </TableCell>
                   <TableCell>{cliente.cnpj}</TableCell>
+                  <TableCell>
+                    {cliente.cidade ? `${cliente.cidade}${cliente.uf ? ` [${cliente.uf}]` : ''}` : '—'}
+                    {cliente.grupoEmpresas ? (
+                      <Typography color="text.secondary" variant="caption" sx={{ display: 'block' }}>
+                        {cliente.grupoEmpresas}
+                      </Typography>
+                    ) : null}
+                  </TableCell>
                   <TableCell>{cliente.regimeTributario ?? '—'}</TableCell>
                   <TableCell>
                     {cliente.responsaveis.length === 0 ? (

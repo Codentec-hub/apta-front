@@ -44,7 +44,93 @@ export interface Cliente {
   regimeTributario: string | null;
   ativo: boolean;
   createdAt: string;
+  // "ID Empresa" do Acessórias.
+  codigo: number;
+  apelido: string | null;
+  cidade: string | null;
+  uf: string | null;
+  grupoEmpresas: string | null;
+  honorario: number | null;
   responsaveis: ClienteResponsavel[];
+  contatos?: ContatoCliente[];
+}
+
+// "Contatos na empresa": quem recebe os documentos de cada departamento.
+export interface ContatoCliente {
+  id: string;
+  nome: string;
+  cargo: string | null;
+  celular: string | null;
+  email: string | null;
+  recebeTodos: boolean;
+  ativo: boolean;
+  clienteId: string;
+  setores: { id: string; nome: string }[];
+}
+
+export interface Feriado {
+  id: string;
+  data: string; // "2000-03-19T00:00:00.000Z"
+  descricao: string;
+  recorrente: boolean;
+  uf: string | null;
+  cidade: string | null;
+}
+
+export interface DocumentoEntrega {
+  id: string;
+  nomeArquivo: string;
+  mimeType: string;
+  tamanho: number;
+  createdAt: string;
+  usuario: { id: string; nome: string } | null;
+}
+
+export type StatusEnvio = 'AGUARDANDO_ENVIO' | 'ENVIADO' | 'FALHA';
+
+export interface ProtocoloEntrega {
+  id: string;
+  numero: number;
+  token: string;
+  destinatarioNome: string;
+  destinatarioEmail: string | null;
+  destinatarioCelular: string | null;
+  status: StatusEnvio;
+  canal: string | null;
+  erroEnvio: string | null;
+  enviadoEm: string | null;
+  lidoEm: string | null;
+  acessos: number;
+  createdAt: string;
+  contatoId: string | null;
+  usuario: { id: string; nome: string } | null;
+}
+
+// Resumo que vem em cada linha da Lista de Entregas.
+export type ProtocoloResumo = Pick<ProtocoloEntrega, 'id' | 'numero' | 'destinatarioNome' | 'status' | 'enviadoEm' | 'lidoEm'>;
+
+// Painel de Indicadores (tela inicial do Acessórias).
+export interface Indicadores {
+  periodo: 'semana' | 'mes';
+  inicio: string;
+  fim: string;
+  entregas: {
+    total: number;
+    antecipadas: number;
+    prazoTecnico: number;
+    atrasadas: number;
+    atrasadasComMulta: number;
+    atrasoJustificado: number;
+  };
+  aRealizar: {
+    total: number;
+    prazoAntecipado: number;
+    prazoTecnico: number;
+    atrasoLegal: number;
+    atrasoLegalComMulta: number;
+    atrasoJustificado: number;
+  };
+  docs: { total: number; lidos: number; naoLidos: number; aguardandoEnvio: number; falhaNoEnvio: number };
 }
 
 export interface Atraso {
@@ -80,6 +166,7 @@ export interface TipoObrigacao {
   ajustePrazo: AjustePrazo;
   sabadoUtil: boolean;
   geraMulta: boolean;
+  alertaNaoLida: boolean;
   comentarioPadrao: string | null;
   _count?: { empresas: number };
 }
@@ -138,17 +225,18 @@ export interface Obrigacao {
   concluidaEm: string | null;
   createdAt: string;
   clienteId: string;
-  cliente: { id: string; razaoSocial: string; cnpj: string };
+  cliente: { id: string; razaoSocial: string; cnpj: string; codigo?: number };
   setorId: string;
   setor: Setor;
   tipoId: string | null;
   tipo: TipoObrigacao | null;
+  protocolos?: ProtocoloResumo[];
   responsavelId: string | null;
   responsavel: { id: string; nome: string } | null;
   entreguePorId: string | null;
   entreguePor: { id: string; nome: string } | null;
   atraso: Atraso | null;
-  _count?: { comentarios: number };
+  _count?: { comentarios: number; documentos?: number };
 }
 
 export type StatusDemanda = 'A_FAZER' | 'EM_ANDAMENTO' | 'CONCLUIDA';

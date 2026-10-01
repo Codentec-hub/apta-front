@@ -38,6 +38,8 @@ import { ClockIcon } from '@phosphor-icons/react/dist/ssr/Clock';
 import { ClockCounterClockwiseIcon } from '@phosphor-icons/react/dist/ssr/ClockCounterClockwise';
 import { CurrencyDollarIcon } from '@phosphor-icons/react/dist/ssr/CurrencyDollar';
 import { DotsThreeVerticalIcon } from '@phosphor-icons/react/dist/ssr/DotsThreeVertical';
+import { EyeSlashIcon } from '@phosphor-icons/react/dist/ssr/EyeSlash';
+import { FileTextIcon } from '@phosphor-icons/react/dist/ssr/FileText';
 import { FunnelIcon } from '@phosphor-icons/react/dist/ssr/Funnel';
 import { PencilSimpleIcon } from '@phosphor-icons/react/dist/ssr/PencilSimple';
 import { PlusIcon } from '@phosphor-icons/react/dist/ssr/Plus';
@@ -61,6 +63,7 @@ import type { Cliente, Obrigacao } from '@/types/domain';
 import { AtrasoDialog } from './atraso-dialog';
 import { ComentariosDialog } from './comentarios-dialog';
 import { ConcluirDialog } from './concluir-dialog';
+import { DocumentosEntregaDialog, statusProtocolo } from './documentos-entrega-dialog';
 import { HistoricoDialog } from './historico-dialog';
 import { ObrigacaoFormDialog } from './obrigacao-form-dialog';
 import type { DadosBase } from './obrigacoes-view';
@@ -151,11 +154,12 @@ export function ListaEntregas({ dados, onErro }: ListaEntregasProps): React.JSX.
   const [intervalos, setIntervalos] = React.useState<Intervalos>(SEM_INTERVALOS);
   const [mostrarFiltros, setMostrarFiltros] = React.useState(true);
   const [busca, setBusca] = React.useState('');
+  const [filtroDocs, setFiltroDocs] = React.useState<'' | 'sem_documento' | 'nao_lidos' | 'lidos'>('');
   const [selecionados, setSelecionados] = React.useState<Set<string>>(new Set());
 
   const [selecionada, setSelecionada] = React.useState<Obrigacao | null>(null);
   const [dialog, setDialog] = React.useState<
-    'form' | 'atraso' | 'concluir' | 'historico' | 'massa' | 'prazoTecnico' | 'comentarios' | null
+    'form' | 'atraso' | 'concluir' | 'historico' | 'massa' | 'prazoTecnico' | 'comentarios' | 'documentos' | null
   >(null);
   const [menu, setMenu] = React.useState<{ el: HTMLElement; obrigacao: Obrigacao } | null>(null);
 
@@ -178,10 +182,11 @@ export function ListaEntregas({ dados, onErro }: ListaEntregasProps): React.JSX.
       ['prazoLegalAte', dia(intervalos.prazoLegalAte)],
       ['entregaDe', dia(intervalos.entregaDe)],
       ['entregaAte', dia(intervalos.entregaAte)],
+      ['docs', filtroDocs || null],
     ];
     for (const [chave, valor] of campos) if (valor) p.set(chave, valor);
     return p.toString();
-  }, [filtroCliente, filtroSetorId, filtroTipoId, filtroResponsavelId, intervalos]);
+  }, [filtroCliente, filtroSetorId, filtroTipoId, filtroResponsavelId, intervalos, filtroDocs]);
 
   const carregar = React.useCallback(() => {
     setCarregando(true);
@@ -290,7 +295,7 @@ export function ListaEntregas({ dados, onErro }: ListaEntregasProps): React.JSX.
 
   const filtrosAtivos =
     Object.values(intervalos).filter(Boolean).length +
-    [filtroCliente, filtroSetorId, filtroTipoId, filtroResponsavelId].filter(Boolean).length;
+    [filtroCliente, filtroSetorId, filtroTipoId, filtroResponsavelId, filtroDocs].filter(Boolean).length;
   const todasFiltradasSelecionadas = filtradas.length > 0 && filtradas.every((o) => selecionados.has(o.id));
   const setorForcado = dados.setores.find((s) => s.id === filtroSetorId);
 
@@ -417,9 +422,26 @@ export function ListaEntregas({ dados, onErro }: ListaEntregasProps): React.JSX.
                 ))}
               </Select>
             </FormControl>
+            <FormControl size="small" sx={{ minWidth: 190 }}>
+              <InputLabel id="filtro-docs">Documentos</InputLabel>
+              <Select
+                labelId="filtro-docs"
+                label="Documentos"
+                value={filtroDocs}
+                onChange={(event) => setFiltroDocs(event.target.value as typeof filtroDocs)}
+              >
+                <MenuItem value="">
+                  <em>Todos</em>
+                </MenuItem>
+                <MenuItem value="sem_documento">Sem documento</MenuItem>
+                <MenuItem value="nao_lidos">Não lidos pelo cliente</MenuItem>
+                <MenuItem value="lidos">Lidos pelo cliente</MenuItem>
+              </Select>
+            </FormControl>
             <Button
               size="small"
               onClick={() => {
+                setFiltroDocs('');
                 setIntervalos(SEM_INTERVALOS);
                 setFiltroCliente(null);
                 setFiltroSetorId('');
@@ -498,7 +520,7 @@ export function ListaEntregas({ dados, onErro }: ListaEntregasProps): React.JSX.
               <TableCell>
                 Obrigação
                 <br />
-                Empresa [final CNPJ]
+                Empresa [ID | final CNPJ]
               </TableCell>
               <TableCell>
                 Prazo · Status entrega
@@ -542,6 +564,9 @@ export function ListaEntregas({ dados, onErro }: ListaEntregasProps): React.JSX.
                   (info.status === 'concluida_com_atraso' && !o.atraso);
                 const responsavelEntrega = o.entreguePor && o.entreguePor.id !== o.responsavelId ? o.entreguePor.nome : null;
                 const comentarios = o._count?.comentarios ?? 0;
+                const totalDocumentos = o._count?.documentos ?? 0;
+                const protocolos = o.protocolos ?? [];
+                const guiaNaoLida = Boolean(o.tipo?.alertaNaoLida) && protocolos.some((p) => !p.lidoEm);
                 return (
                   <TableRow key={o.id} hover selected={selecionados.has(o.id)} sx={o.dispensada ? { opacity: 0.6 } : undefined}>
                     <TableCell padding="checkbox">
@@ -560,9 +585,15 @@ export function ListaEntregas({ dados, onErro }: ListaEntregasProps): React.JSX.
                             <CurrencyDollarIcon color="var(--mui-palette-warning-main)" />
                           </Tooltip>
                         ) : null}
+                        {guiaNaoLida ? (
+                          <Tooltip title="Alerta: o cliente ainda não abriu a guia">
+                            <EyeSlashIcon color="var(--mui-palette-error-main)" />
+                          </Tooltip>
+                        ) : null}
                       </Stack>
                       <Typography variant="caption" noWrap title={o.cliente.razaoSocial} sx={{ display: 'block' }}>
-                        {o.cliente.razaoSocial} [{finalCnpj(o.cliente.cnpj)}]
+                        {o.cliente.razaoSocial} [{o.cliente.codigo ? `${String(o.cliente.codigo).padStart(3, '0')} | ` : ''}
+                        {finalCnpj(o.cliente.cnpj)}]
                       </Typography>
                     </TableCell>
                     <TableCell>
@@ -600,12 +631,41 @@ export function ListaEntregas({ dados, onErro }: ListaEntregasProps): React.JSX.
                         {formatarCompetencia(o.competencia, competenciaAnual(o.tipo))}
                       </Typography>
                     </TableCell>
-                    <TableCell>
+                    <TableCell sx={{ maxWidth: 260 }}>
                       {o.concluidaEm ? (
                         <Typography variant="caption" sx={{ display: 'block' }}>
                           Entregue {dayjs(o.concluidaEm).format('DD/MM/YY HH:mm')}
                           {o.entreguePor ? ` · ${o.entreguePor.nome}` : ''}
                         </Typography>
+                      ) : null}
+                      {protocolos.length > 0 ? (
+                        <Link
+                          component="button"
+                          type="button"
+                          variant="caption"
+                          onClick={() => abrir('documentos', o)}
+                          sx={{ display: 'block', textAlign: 'left' }}
+                        >
+                          {protocolos.slice(0, 2).map((p) => {
+                            const st = statusProtocolo(p);
+                            return (
+                              <Box key={p.id} component="span" sx={{ display: 'block' }}>
+                                Nº {p.numero} · {p.destinatarioNome.split(' ')[0]} ·{' '}
+                                <Box
+                                  component="span"
+                                  sx={{ color: st.color === 'success' ? 'success.main' : st.color === 'warning' ? 'warning.dark' : 'text.secondary' }}
+                                >
+                                  {p.lidoEm ? 'lido' : p.status === 'ENVIADO' ? 'não lido' : 'aguardando envio'}
+                                </Box>
+                              </Box>
+                            );
+                          })}
+                          {protocolos.length > 2 ? `+${protocolos.length - 2} protocolo(s)` : null}
+                        </Link>
+                      ) : totalDocumentos > 0 ? (
+                        <Link component="button" type="button" variant="caption" onClick={() => abrir('documentos', o)} sx={{ display: 'block' }}>
+                          {totalDocumentos} doc(s) · sem protocolo
+                        </Link>
                       ) : null}
                       <Link
                         component="button"
@@ -690,6 +750,14 @@ export function ListaEntregas({ dados, onErro }: ListaEntregasProps): React.JSX.
           </MenuItem>
         ) : null}
         {menu ? (
+          <MenuItem onClick={() => abrir('documentos', menu.obrigacao)}>
+            <ListItemIcon>
+              <FileTextIcon />
+            </ListItemIcon>
+            Documentos e protocolo
+          </MenuItem>
+        ) : null}
+        {menu ? (
           <MenuItem onClick={() => abrir('form', menu.obrigacao)}>
             <ListItemIcon>
               <PencilSimpleIcon />
@@ -740,7 +808,19 @@ export function ListaEntregas({ dados, onErro }: ListaEntregasProps): React.JSX.
         obrigacao={selecionada}
         onClose={() => setDialog(null)}
         onChange={(id, total) =>
-          setEntregas((atual) => atual.map((o) => (o.id === id ? { ...o, _count: { comentarios: total } } : o)))
+          setEntregas((atual) => atual.map((o) => (o.id === id ? { ...o, _count: { ...o._count, comentarios: total } } : o)))
+        }
+      />
+      <DocumentosEntregaDialog
+        open={dialog === 'documentos'}
+        obrigacao={selecionada}
+        onClose={() => setDialog(null)}
+        onChange={(id, protocolos, totalDocumentos) =>
+          setEntregas((atual) =>
+            atual.map((o) =>
+              o.id === id ? { ...o, protocolos, _count: { comentarios: o._count?.comentarios ?? 0, documentos: totalDocumentos } } : o
+            )
+          )
         }
       />
       <PrazosEmMassaDialog

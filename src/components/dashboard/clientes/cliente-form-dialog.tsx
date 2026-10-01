@@ -17,9 +17,17 @@ import TextField from '@mui/material/TextField';
 import Typography from '@mui/material/Typography';
 
 import { api } from '@/lib/api';
-import type { Cliente, Setor, UsuarioResumo } from '@/types/domain';
+import type { Cliente, ConjuntoObrigacoes, Setor, UsuarioResumo } from '@/types/domain';
 
-const REGIMES = ['Simples Nacional', 'Lucro Presumido', 'Lucro Real'];
+import { ContatosEmpresa } from './contatos-empresa';
+
+// Usados quando ainda não há regimes cadastrados (Obrigações → Regimes).
+const REGIMES_PADRAO = ['Simples Nacional', 'Lucro Presumido', 'Lucro Real'];
+
+const UFS = [
+  'AC', 'AL', 'AM', 'AP', 'BA', 'CE', 'DF', 'ES', 'GO', 'MA', 'MG', 'MS', 'MT', 'PA',
+  'PB', 'PE', 'PI', 'PR', 'RJ', 'RN', 'RO', 'RR', 'RS', 'SC', 'SE', 'SP', 'TO',
+];
 
 export interface ClienteFormDialogProps {
   open: boolean;
@@ -35,9 +43,24 @@ interface FormState {
   nomeFantasia: string;
   cnpj: string;
   regimeTributario: string;
+  apelido: string;
+  cidade: string;
+  uf: string;
+  grupoEmpresas: string;
+  honorario: string;
 }
 
-const VAZIO: FormState = { razaoSocial: '', nomeFantasia: '', cnpj: '', regimeTributario: '' };
+const VAZIO: FormState = {
+  razaoSocial: '',
+  nomeFantasia: '',
+  cnpj: '',
+  regimeTributario: '',
+  apelido: '',
+  cidade: 'Fortaleza',
+  uf: 'CE',
+  grupoEmpresas: '',
+  honorario: '',
+};
 
 export function ClienteFormDialog({
   open,
@@ -52,6 +75,17 @@ export function ClienteFormDialog({
   const [salvando, setSalvando] = React.useState(false);
   const [erro, setErro] = React.useState<string | null>(null);
   const [salvandoResponsavelSetorId, setSalvandoResponsavelSetorId] = React.useState<string | null>(null);
+  const [regimes, setRegimes] = React.useState<string[]>(REGIMES_PADRAO);
+
+  // Regimes granulares do cadastro ("Simples Nacional - Comércio … - Com Funcionários").
+  React.useEffect(() => {
+    if (!open) return;
+    api<ConjuntoObrigacoes[]>('/regimes')
+      .then((lista) => {
+        if (lista.length > 0) setRegimes(lista.map((r) => r.nome));
+      })
+      .catch(() => null);
+  }, [open]);
 
   React.useEffect(() => {
     if (open) {
@@ -63,6 +97,11 @@ export function ClienteFormDialog({
               nomeFantasia: cliente.nomeFantasia ?? '',
               cnpj: cliente.cnpj,
               regimeTributario: cliente.regimeTributario ?? '',
+              apelido: cliente.apelido ?? '',
+              cidade: cliente.cidade ?? '',
+              uf: cliente.uf ?? '',
+              grupoEmpresas: cliente.grupoEmpresas ?? '',
+              honorario: cliente.honorario === null ? '' : String(cliente.honorario),
             }
           : VAZIO
       );
@@ -85,6 +124,11 @@ export function ClienteFormDialog({
       nomeFantasia: form.nomeFantasia.trim() || null,
       cnpj: form.cnpj.trim(),
       regimeTributario: form.regimeTributario || null,
+      apelido: form.apelido.trim() || null,
+      cidade: form.cidade.trim() || null,
+      uf: form.uf || null,
+      grupoEmpresas: form.grupoEmpresas.trim() || null,
+      honorario: form.honorario.trim() ? Number(form.honorario.replace(',', '.')) : null,
     };
 
     try {
@@ -129,8 +173,10 @@ export function ClienteFormDialog({
   }
 
   return (
-    <Dialog open={open} onClose={onClose} maxWidth="sm" fullWidth>
-      <DialogTitle>{clienteAtual ? 'Editar cliente' : 'Novo cliente'}</DialogTitle>
+    <Dialog open={open} onClose={onClose} maxWidth="md" fullWidth>
+      <DialogTitle>
+        {clienteAtual ? `Editar cliente [${String(clienteAtual.codigo).padStart(3, '0')}]` : 'Novo cliente'}
+      </DialogTitle>
       <Stack component="form" onSubmit={salvar}>
         <DialogContent>
           <Stack spacing={2}>
@@ -143,19 +189,65 @@ export function ClienteFormDialog({
               autoFocus
               fullWidth
             />
-            <TextField
-              label="Nome fantasia"
-              value={form.nomeFantasia}
-              onChange={(event) => setForm((f) => ({ ...f, nomeFantasia: event.target.value }))}
-              fullWidth
-            />
-            <TextField
-              label="CNPJ"
-              value={form.cnpj}
-              onChange={(event) => setForm((f) => ({ ...f, cnpj: event.target.value }))}
-              required
-              fullWidth
-            />
+            <Stack direction={{ xs: 'column', sm: 'row' }} spacing={2}>
+              <TextField
+                label="Nome fantasia"
+                value={form.nomeFantasia}
+                onChange={(event) => setForm((f) => ({ ...f, nomeFantasia: event.target.value }))}
+                fullWidth
+              />
+              <TextField
+                label="Apelido"
+                value={form.apelido}
+                onChange={(event) => setForm((f) => ({ ...f, apelido: event.target.value }))}
+                fullWidth
+              />
+            </Stack>
+            <Stack direction={{ xs: 'column', sm: 'row' }} spacing={2}>
+              <TextField
+                label="CNPJ / CPF / CAEPF"
+                value={form.cnpj}
+                onChange={(event) => setForm((f) => ({ ...f, cnpj: event.target.value }))}
+                required
+                fullWidth
+              />
+              <TextField
+                label="Cidade"
+                value={form.cidade}
+                onChange={(event) => setForm((f) => ({ ...f, cidade: event.target.value }))}
+                helperText="Define os feriados municipais"
+                fullWidth
+              />
+              <FormControl sx={{ minWidth: 100 }}>
+                <InputLabel id="uf-label">UF</InputLabel>
+                <Select labelId="uf-label" label="UF" value={form.uf} onChange={(event) => setForm((f) => ({ ...f, uf: event.target.value }))}>
+                  <MenuItem value="">
+                    <em>—</em>
+                  </MenuItem>
+                  {UFS.map((uf) => (
+                    <MenuItem key={uf} value={uf}>
+                      {uf}
+                    </MenuItem>
+                  ))}
+                </Select>
+              </FormControl>
+            </Stack>
+            <Stack direction={{ xs: 'column', sm: 'row' }} spacing={2}>
+              <TextField
+                label="Grupo de empresas"
+                value={form.grupoEmpresas}
+                onChange={(event) => setForm((f) => ({ ...f, grupoEmpresas: event.target.value }))}
+                placeholder="Geral"
+                fullWidth
+              />
+              <TextField
+                label="Honorário (R$)"
+                value={form.honorario}
+                onChange={(event) => setForm((f) => ({ ...f, honorario: event.target.value }))}
+                inputMode="decimal"
+                fullWidth
+              />
+            </Stack>
             <FormControl fullWidth>
               <InputLabel id="regime-label">Regime tributário</InputLabel>
               <Select
@@ -167,7 +259,10 @@ export function ClienteFormDialog({
                 <MenuItem value="">
                   <em>Não definido</em>
                 </MenuItem>
-                {REGIMES.map((regime) => (
+                {(form.regimeTributario && !regimes.includes(form.regimeTributario)
+                  ? [...regimes, form.regimeTributario]
+                  : regimes
+                ).map((regime) => (
                   <MenuItem key={regime} value={regime}>
                     {regime}
                   </MenuItem>
@@ -177,6 +272,8 @@ export function ClienteFormDialog({
 
             {clienteAtual ? (
               <>
+                <Divider />
+                <ContatosEmpresa clienteId={clienteAtual.id} setores={setores} />
                 <Divider />
                 <Typography variant="subtitle2">Responsáveis por setor</Typography>
                 <Stack spacing={2}>
@@ -205,7 +302,7 @@ export function ClienteFormDialog({
               </>
             ) : (
               <Typography color="text.secondary" variant="body2">
-                Salve o cliente para poder atribuir os responsáveis por setor.
+                Salve o cliente para poder cadastrar os contatos e atribuir os responsáveis por setor.
               </Typography>
             )}
           </Stack>

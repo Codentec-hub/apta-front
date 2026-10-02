@@ -61,6 +61,7 @@ interface FormState {
   sabadoUtil: boolean;
   competenciaReferente: number;
   geraMulta: boolean;
+  alertaNaoLida: boolean;
   ativo: boolean;
   comentarioPadrao: string;
 }
@@ -77,6 +78,7 @@ const VAZIO: FormState = {
   sabadoUtil: false,
   competenciaReferente: -1,
   geraMulta: false,
+  alertaNaoLida: false,
   ativo: true,
   comentarioPadrao: '',
 };
@@ -112,6 +114,7 @@ function formDoTipo(tipo: TipoObrigacao): FormState {
     sabadoUtil: tipo.sabadoUtil,
     competenciaReferente: tipo.competenciaReferente,
     geraMulta: tipo.geraMulta,
+    alertaNaoLida: tipo.alertaNaoLida,
     ativo: tipo.ativo,
     comentarioPadrao: tipo.comentarioPadrao ?? '',
   };
@@ -207,6 +210,7 @@ export function TipoObrigacaoFormDialog({
       setorId: form.setorId,
       tempoPrevistoMinutos: form.tempoPrevistoMinutos ? Number(form.tempoPrevistoMinutos) : null,
       geraMulta: form.geraMulta,
+      alertaNaoLida: form.alertaNaoLida,
       ativo: form.ativo,
       comentarioPadrao: form.comentarioPadrao.trim() || null,
     };
@@ -385,7 +389,7 @@ export function TipoObrigacaoFormDialog({
             </FormControl>
           </Box>
 
-          <Box sx={{ display: 'grid', gap: 2, gridTemplateColumns: { xs: '1fr', md: '2fr 1fr 1fr' } }}>
+          <Box sx={{ display: 'grid', gap: 2, gridTemplateColumns: { xs: '1fr', md: '2fr 1fr 1fr 1fr' } }}>
             <FormControl>
               <InputLabel id="tipo-comp">Competências referentes a</InputLabel>
               <Select
@@ -408,6 +412,18 @@ export function TipoObrigacaoFormDialog({
                 label="Passível de multa?"
                 value={form.geraMulta ? 'S' : 'N'}
                 onChange={(e) => campo('geraMulta', e.target.value === 'S')}
+              >
+                <MenuItem value="N">Não</MenuItem>
+                <MenuItem value="S">Sim</MenuItem>
+              </Select>
+            </FormControl>
+            <FormControl>
+              <InputLabel id="tipo-alerta-nao-lida">Alerta guia não-lida?</InputLabel>
+              <Select
+                labelId="tipo-alerta-nao-lida"
+                label="Alerta guia não-lida?"
+                value={form.alertaNaoLida ? 'S' : 'N'}
+                onChange={(e) => campo('alertaNaoLida', e.target.value === 'S')}
               >
                 <MenuItem value="N">Não</MenuItem>
                 <MenuItem value="S">Sim</MenuItem>

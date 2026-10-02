@@ -16,6 +16,7 @@ export const navItems = [
 
 export const settingsNavItems = [
   { key: 'setores', title: 'Setores', href: paths.dashboard.setores, icon: 'squares-four' },
+  { key: 'feriados', title: 'Feriados', href: paths.dashboard.feriados, icon: 'calendar' },
   { key: 'usuarios', title: 'Usuários', href: paths.dashboard.usuarios, icon: 'users-three' },
   { key: 'integracoes', title: 'Integrações', href: paths.dashboard.integracoes, icon: 'plugs-connected' },
 ] satisfies NavItemConfig[];

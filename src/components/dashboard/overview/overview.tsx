@@ -110,6 +110,7 @@ export function Overview(): React.JSX.Element {
         antecipadas: number;
         noPrazo: number;
         atrasoLegal: number;
+        atrasoJustificado: number;
         semJustificativa: number;
         dispensadas: number;
         pendentes: number;
@@ -125,6 +126,7 @@ export function Overview(): React.JSX.Element {
           antecipadas: 0,
           noPrazo: 0,
           atrasoLegal: 0,
+          atrasoJustificado: 0,
           semJustificativa: 0,
           dispensadas: 0,
           pendentes: 0,
@@ -143,6 +145,10 @@ export function Overview(): React.JSX.Element {
         }
         case 'atraso_legal': {
           linha.atrasoLegal += 1;
+          break;
+        }
+        case 'atraso_justificado': {
+          linha.atrasoJustificado += 1;
           break;
         }
         case 'atraso_sem_justificativa': {
@@ -275,6 +281,7 @@ export function Overview(): React.JSX.Element {
                   <TableCell align="center">Antecipadas</TableCell>
                   <TableCell align="center">No prazo</TableCell>
                   <TableCell align="center">Atraso legal</TableCell>
+                  <TableCell align="center">Atraso justificado</TableCell>
                   <TableCell align="center">Atraso sem justificativa</TableCell>
                   <TableCell align="center">Dispensadas</TableCell>
                   <TableCell align="center">Pendentes</TableCell>
@@ -291,6 +298,7 @@ export function Overview(): React.JSX.Element {
                         {linha.atrasoLegal}
                       </Box>
                     </TableCell>
+                    <TableCell align="center">{linha.atrasoJustificado}</TableCell>
                     <TableCell align="center">
                       <Box component="span" sx={linha.semJustificativa > 0 ? { color: 'error.main', fontWeight: 600 } : undefined}>
                         {linha.semJustificativa}

@@ -58,8 +58,15 @@ export function statusDaObrigacao(obrigacao: Obrigacao, agora: Date = new Date()
 // Geral e ficha do cliente), separada do statusDaObrigacao acima — que
 // continua sendo a fonte da verdade para "o que precisa de ação agora".
 // Espelha as colunas reais do Acessorias (Antecipadas / Prazo técnico /
-// Atraso legal / Atraso sem justificativa / Dispensadas).
-export type Pontualidade = 'dispensada' | 'antecipada' | 'no_prazo' | 'atraso_legal' | 'atraso_sem_justificativa' | 'pendente';
+// Atraso legal / Atraso justificado / Atraso sem justificativa / Dispensadas).
+export type Pontualidade =
+  | 'dispensada'
+  | 'antecipada'
+  | 'no_prazo'
+  | 'atraso_legal'
+  | 'atraso_justificado'
+  | 'atraso_sem_justificativa'
+  | 'pendente';
 
 export function pontualidadeDaObrigacao(obrigacao: Obrigacao, agora: Date = new Date()): Pontualidade {
   if (obrigacao.dispensada) {
@@ -72,12 +79,16 @@ export function pontualidadeDaObrigacao(obrigacao: Obrigacao, agora: Date = new 
     const prazoTecnico = obrigacao.prazoTecnico ? new Date(obrigacao.prazoTecnico) : null;
 
     if (concluidaEm > prazo) {
-      return 'atraso_legal';
+      return obrigacao.atraso ? 'atraso_justificado' : 'atraso_legal';
     }
     if (prazoTecnico && concluidaEm <= prazoTecnico) {
       return 'antecipada';
     }
     return 'no_prazo';
+  }
+
+  if (obrigacao.atraso) {
+    return 'atraso_justificado';
   }
 
   const status = statusDaObrigacao(obrigacao, agora).status;

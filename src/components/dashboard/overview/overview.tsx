@@ -24,7 +24,7 @@ import { api } from '@/lib/api';
 import { useUser } from '@/hooks/use-user';
 import { paths } from '@/paths';
 import { pontualidadeDaObrigacao, statusDaObrigacao } from '@/lib/obrigacao-status';
-import type { Obrigacao } from '@/types/domain';
+import type { Indicadores, Obrigacao } from '@/types/domain';
 
 interface Cliente {
   id: string;
@@ -41,11 +41,18 @@ const STATUS_COLOR: Record<ApiStatus, 'default' | 'success' | 'error'> = {
   offline: 'error',
 };
 
+function percentual(parte: number, total: number): string {
+  if (total === 0) return '0%';
+  return `${Math.round((parte / total) * 100)}%`;
+}
+
 export function Overview(): React.JSX.Element {
   const { user } = useUser();
   const [apiStatus, setApiStatus] = React.useState<ApiStatus>('verificando');
   const [clientes, setClientes] = React.useState<Cliente[]>([]);
   const [obrigacoes, setObrigacoes] = React.useState<Obrigacao[]>([]);
+  const [periodoIndicadores, setPeriodoIndicadores] = React.useState<'semana' | 'mes'>('semana');
+  const [indicadores, setIndicadores] = React.useState<Indicadores | null>(null);
 
   React.useEffect(() => {
     api('/health')
@@ -60,6 +67,12 @@ export function Overview(): React.JSX.Element {
       .then(setObrigacoes)
       .catch(() => setObrigacoes([]));
   }, []);
+
+  React.useEffect(() => {
+    api<Indicadores>(`/indicadores?periodo=${periodoIndicadores}`)
+      .then(setIndicadores)
+      .catch(() => setIndicadores(null));
+  }, [periodoIndicadores]);
 
   const agora = React.useMemo(() => dayjs(), []);
   const fimDaSemana = React.useMemo(() => agora.add(7, 'day'), [agora]);
@@ -224,6 +237,99 @@ export function Overview(): React.JSX.Element {
               </Alert>
             ) : null}
           </Stack>
+        )}
+      </Stack>
+
+      <Stack spacing={2}>
+        <Stack direction="row" sx={{ alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: 2 }}>
+          <Typography variant="h6">Painel de Indicadores</Typography>
+          <Stack direction="row" spacing={1}>
+            <Chip
+              label="Semana"
+              size="small"
+              color={periodoIndicadores === 'semana' ? 'primary' : 'default'}
+              variant={periodoIndicadores === 'semana' ? 'filled' : 'outlined'}
+              onClick={() => setPeriodoIndicadores('semana')}
+            />
+            <Chip
+              label="Mês"
+              size="small"
+              color={periodoIndicadores === 'mes' ? 'primary' : 'default'}
+              variant={periodoIndicadores === 'mes' ? 'filled' : 'outlined'}
+              onClick={() => setPeriodoIndicadores('mes')}
+            />
+          </Stack>
+        </Stack>
+
+        {indicadores ? (
+          <Grid container spacing={2}>
+            <Grid size={{ xs: 12, md: 4 }}>
+              <Paper variant="outlined" sx={{ p: 2 }}>
+                <Typography color="text.secondary" variant="body2">
+                  Entregas
+                </Typography>
+                <Typography variant="h4">{indicadores.entregas.total}</Typography>
+                <Stack spacing={0.5} sx={{ mt: 1 }}>
+                  <Typography variant="body2">Antecipadas: {indicadores.entregas.antecipadas}</Typography>
+                  <Typography variant="body2">Prazo técnico: {indicadores.entregas.prazoTecnico}</Typography>
+                  <Typography color={indicadores.entregas.atrasadas > 0 ? 'error.main' : undefined} variant="body2">
+                    Atrasadas: {indicadores.entregas.atrasadas}
+                    {indicadores.entregas.atrasadasComMulta > 0
+                      ? ` (${indicadores.entregas.atrasadasComMulta} com multa)`
+                      : ''}
+                  </Typography>
+                  <Typography color={indicadores.entregas.atrasoJustificado > 0 ? 'warning.main' : undefined} variant="body2">
+                    Atraso justificado: {indicadores.entregas.atrasoJustificado}
+                  </Typography>
+                </Stack>
+              </Paper>
+            </Grid>
+            <Grid size={{ xs: 12, md: 4 }}>
+              <Paper variant="outlined" sx={{ p: 2 }}>
+                <Typography color="text.secondary" variant="body2">
+                  A realizar
+                </Typography>
+                <Typography variant="h4">{indicadores.aRealizar.total}</Typography>
+                <Stack spacing={0.5} sx={{ mt: 1 }}>
+                  <Typography variant="body2">Prazo antecipado: {indicadores.aRealizar.prazoAntecipado}</Typography>
+                  <Typography variant="body2">Prazo técnico: {indicadores.aRealizar.prazoTecnico}</Typography>
+                  <Typography color={indicadores.aRealizar.atrasoLegal > 0 ? 'error.main' : undefined} variant="body2">
+                    Atraso legal: {indicadores.aRealizar.atrasoLegal}
+                    {indicadores.aRealizar.atrasoLegalComMulta > 0
+                      ? ` (${indicadores.aRealizar.atrasoLegalComMulta} com multa)`
+                      : ''}
+                  </Typography>
+                  <Typography color={indicadores.aRealizar.atrasoJustificado > 0 ? 'warning.main' : undefined} variant="body2">
+                    Atraso justificado: {indicadores.aRealizar.atrasoJustificado}
+                  </Typography>
+                </Stack>
+              </Paper>
+            </Grid>
+            <Grid size={{ xs: 12, md: 4 }}>
+              <Paper variant="outlined" sx={{ p: 2 }}>
+                <Typography color="text.secondary" variant="body2">
+                  Docs
+                </Typography>
+                <Typography variant="h4">{indicadores.docs.total}</Typography>
+                <Stack spacing={0.5} sx={{ mt: 1 }}>
+                  <Typography color="success.main" variant="body2">
+                    Lidos: {indicadores.docs.lidos}/{percentual(indicadores.docs.lidos, indicadores.docs.total)}
+                  </Typography>
+                  <Typography color={indicadores.docs.naoLidos > 0 ? 'error.main' : undefined} variant="body2">
+                    Não lidos: {indicadores.docs.naoLidos}/{percentual(indicadores.docs.naoLidos, indicadores.docs.total)}
+                  </Typography>
+                  <Typography variant="body2">Aguardando envio: {indicadores.docs.aguardandoEnvio}</Typography>
+                  <Typography color={indicadores.docs.falhaNoEnvio > 0 ? 'error.main' : undefined} variant="body2">
+                    Falha no envio: {indicadores.docs.falhaNoEnvio}/{percentual(indicadores.docs.falhaNoEnvio, indicadores.docs.total)}
+                  </Typography>
+                </Stack>
+              </Paper>
+            </Grid>
+          </Grid>
+        ) : (
+          <Typography color="text.secondary" variant="body2" sx={{ fontStyle: 'italic' }}>
+            Carregando indicadores…
+          </Typography>
         )}
       </Stack>
 

@@ -104,6 +104,15 @@ export interface ProtocoloEntrega {
   createdAt: string;
   contatoId: string | null;
   usuario: { id: string; nome: string } | null;
+  alertasNaoLida: { diasAntes: number; enviadoEm: string; erro: string | null }[];
+}
+
+// Configuração geral do envio de e-mails ao cliente (lembrete de guia não lida).
+export interface ConfiguracaoEnvio {
+  diasAlertaNaoLida: number[];
+  prefixoAlertaNaoLida: string;
+  avisoCabecalho: string | null;
+  emailConfigurado: boolean;
 }
 
 // Resumo que vem em cada linha da Lista de Entregas.

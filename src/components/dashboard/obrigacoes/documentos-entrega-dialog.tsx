@@ -61,6 +61,18 @@ export function useContatosDaEmpresa(clienteId: string | null, ativo: boolean): 
   return contatos;
 }
 
+// Canais que o servidor dispara sozinho (hoje só e-mail, se configurado).
+export function useCanaisEnvio(ativo: boolean): { email: boolean } {
+  const [canais, setCanais] = React.useState({ email: false });
+  React.useEffect(() => {
+    if (!ativo) return;
+    api<{ email: boolean }>('/envio/canais')
+      .then(setCanais)
+      .catch(() => setCanais({ email: false }));
+  }, [ativo]);
+  return canais;
+}
+
 export function destinatariosPadrao(contatos: ContatoCliente[], setorId: string): Set<string> {
   return new Set(contatos.filter((c) => recebeDoSetor(c, setorId)).map((c) => c.id));
 }
@@ -130,6 +142,24 @@ export function statusProtocolo(p: Pick<ProtocoloResumo, 'status' | 'lidoEm'>): 
   return { label: 'Aguardando envio', color: 'default' };
 }
 
+// Aviso depois de gerar protocolos: quantos foram por e-mail e quantos
+// ficaram para envio manual.
+export function resumoEnvio(criados: Pick<ProtocoloEntrega, 'status' | 'canal'>[], emailAutomatico: boolean): string {
+  const gerados = `${criados.length} protocolo(s) gerado(s)`;
+  if (!emailAutomatico) return `${gerados} — envie o link a cada destinatário`;
+  const enviados = criados.filter((p) => p.status === 'ENVIADO' && p.canal === 'email').length;
+  const falhas = criados.filter((p) => p.status === 'FALHA').length;
+  const manuais = criados.length - enviados - falhas;
+  return [
+    gerados,
+    enviados ? `${enviados} enviado(s) por e-mail` : null,
+    falhas ? `${falhas} com falha no envio` : null,
+    manuais ? `${manuais} sem e-mail, envie o link manualmente` : null,
+  ]
+    .filter(Boolean)
+    .join(' · ');
+}
+
 // ---------------------------------------------------------------------------
 // Dialog "Documentos e protocolo" de uma entrega.
 // ---------------------------------------------------------------------------
@@ -153,6 +183,7 @@ export function DocumentosEntregaDialog({ open, obrigacao, onClose, onChange }: 
   const inputArquivo = React.useRef<HTMLInputElement>(null);
 
   const contatos = useContatosDaEmpresa(obrigacao?.clienteId ?? null, open);
+  const canais = useCanaisEnvio(open);
 
   React.useEffect(() => {
     if (!open || !obrigacao) return;
@@ -229,11 +260,23 @@ export function DocumentosEntregaDialog({ open, obrigacao, onClose, onChange }: 
     void executar(async () => {
       const criados = await api<ProtocoloEntrega[]>(`/obrigacoes/${entrega.id}/protocolos`, {
         method: 'POST',
-        body: JSON.stringify({ contatoIds: [...selecionados] }),
+        body: JSON.stringify({ contatoIds: [...selecionados], enviarEmail: canais.email }),
       });
       publicar([...protocolos, ...criados], documentos);
       setGerando(false);
-      setAviso(`${criados.length} protocolo(s) gerado(s) — envie o link a cada destinatário`);
+      setAviso(resumoEnvio(criados, canais.email));
+    });
+  }
+
+  function enviarEmail(p: ProtocoloEntrega): void {
+    void executar(async () => {
+      const atualizado = await api<ProtocoloEntrega>(`/protocolos/${p.id}/enviar-email`, { method: 'POST' });
+      publicar(
+        protocolos.map((x) => (x.id === p.id ? atualizado : x)),
+        documentos
+      );
+      if (atualizado.erroEnvio) setErro(`Protocolo nº ${p.numero}: ${atualizado.erroEnvio ?? 'falha no envio'}`);
+      else setAviso(`Protocolo nº ${p.numero} enviado por e-mail para ${atualizado.destinatarioEmail ?? ''}`);
     });
   }
 
@@ -387,6 +430,7 @@ export function DocumentosEntregaDialog({ open, obrigacao, onClose, onChange }: 
                   const texto = mensagemDeEnvio(p, entrega);
                   const whats = linkWhatsApp(p, texto);
                   const email = linkEmail(p, assunto, texto);
+                  const emailAutomatico = canais.email && Boolean(p.destinatarioEmail);
                   return (
                     <TableRow key={p.id}>
                       <TableCell>{p.numero}</TableCell>
@@ -403,6 +447,22 @@ export function DocumentosEntregaDialog({ open, obrigacao, onClose, onChange }: 
                           {p.enviadoEm ? ` · enviado ${dayjs(p.enviadoEm).format('DD/MM HH:mm')}` : ''}
                           {p.acessos ? ` · ${p.acessos} acesso(s)` : ''}
                         </Typography>
+                        {p.erroEnvio ? (
+                          <Typography variant="caption" color="error" sx={{ display: 'block' }}>
+                            {p.erroEnvio}
+                          </Typography>
+                        ) : null}
+                        {p.alertasNaoLida.length > 0 ? (
+                          <Typography variant="caption" color="text.secondary" sx={{ display: 'block' }}>
+                            Lembrete de guia não lida:{' '}
+                            {p.alertasNaoLida
+                              .map(
+                                (a) =>
+                                  `${a.diasAntes === 0 ? 'no vencimento' : `${a.diasAntes}d antes`} (${dayjs(a.enviadoEm).format('DD/MM')}${a.erro ? ', falhou' : ''})`
+                              )
+                              .join(' · ')}
+                          </Typography>
+                        ) : null}
                       </TableCell>
                       <TableCell align="right" sx={{ whiteSpace: 'nowrap' }}>
                         <Tooltip title="Copiar mensagem com o link">
@@ -424,19 +484,29 @@ export function DocumentosEntregaDialog({ open, obrigacao, onClose, onChange }: 
                             </IconButton>
                           </span>
                         </Tooltip>
-                        <Tooltip title={email ? 'Abrir e-mail com a mensagem pronta' : 'Contato sem e-mail'}>
-                          <span>
-                            <IconButton
-                              size="small"
-                              color="primary"
-                              disabled={!email}
-                              href={email ?? ''}
-                              onClick={() => p.status === 'AGUARDANDO_ENVIO' && marcarEnviado(p, 'email')}
-                            >
-                              <EnvelopeSimpleIcon />
-                            </IconButton>
-                          </span>
-                        </Tooltip>
+                        {emailAutomatico ? (
+                          <Tooltip title={p.status === 'AGUARDANDO_ENVIO' ? 'Enviar por e-mail' : 'Reenviar por e-mail'}>
+                            <span>
+                              <IconButton size="small" color="primary" disabled={ocupado} onClick={() => enviarEmail(p)}>
+                                <EnvelopeSimpleIcon />
+                              </IconButton>
+                            </span>
+                          </Tooltip>
+                        ) : (
+                          <Tooltip title={email ? 'Abrir e-mail com a mensagem pronta' : 'Contato sem e-mail'}>
+                            <span>
+                              <IconButton
+                                size="small"
+                                color="primary"
+                                disabled={!email}
+                                href={email ?? ''}
+                                onClick={() => p.status === 'AGUARDANDO_ENVIO' && marcarEnviado(p, 'email')}
+                              >
+                                <EnvelopeSimpleIcon />
+                              </IconButton>
+                            </span>
+                          </Tooltip>
+                        )}
                         <Tooltip title="Cancelar protocolo (o link deixa de funcionar)">
                           <IconButton size="small" color="error" disabled={ocupado} onClick={() => cancelar(p)}>
                             <XIcon />
@@ -451,9 +521,10 @@ export function DocumentosEntregaDialog({ open, obrigacao, onClose, onChange }: 
           ) : null}
 
           <Alert severity="info" variant="outlined">
-            O cliente recebe um link com os documentos. Quando ele abre um documento, o protocolo fica como <strong>lido</strong>. O
-            disparo automático por e-mail/WhatsApp ainda depende de integração: por enquanto, use os botões acima (copiar, WhatsApp,
-            e-mail), que abrem a mensagem pronta e marcam o protocolo como enviado.
+            O cliente recebe um link com os documentos. Quando ele abre um documento, o protocolo fica como <strong>lido</strong>.{' '}
+            {canais.email
+              ? 'O e-mail é enviado automaticamente ao gerar o protocolo. O WhatsApp ainda é manual: o botão abre a conversa com a mensagem pronta e marca o protocolo como enviado.'
+              : 'O envio automático por e-mail não está configurado no servidor: use os botões acima (copiar, WhatsApp, e-mail), que abrem a mensagem pronta e marcam o protocolo como enviado.'}
           </Alert>
         </Stack>
       </DialogContent>

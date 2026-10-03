@@ -3,12 +3,14 @@
 import * as React from 'react';
 import Alert from '@mui/material/Alert';
 import Button from '@mui/material/Button';
+import Checkbox from '@mui/material/Checkbox';
 import Chip from '@mui/material/Chip';
 import Dialog from '@mui/material/Dialog';
 import DialogActions from '@mui/material/DialogActions';
 import DialogContent from '@mui/material/DialogContent';
 import DialogTitle from '@mui/material/DialogTitle';
 import Divider from '@mui/material/Divider';
+import FormControlLabel from '@mui/material/FormControlLabel';
 import Stack from '@mui/material/Stack';
 import TextField from '@mui/material/TextField';
 import Typography from '@mui/material/Typography';
@@ -20,7 +22,7 @@ import { api } from '@/lib/api';
 import { anexarDocumento, formatarTamanho } from '@/lib/documentos-entrega';
 import type { Obrigacao } from '@/types/domain';
 
-import { destinatariosPadrao, SeletorDestinatarios, useContatosDaEmpresa } from './documentos-entrega-dialog';
+import { destinatariosPadrao, SeletorDestinatarios, useCanaisEnvio, useContatosDaEmpresa } from './documentos-entrega-dialog';
 
 export interface ConcluirDialogProps {
   open: boolean;
@@ -41,6 +43,8 @@ export function ConcluirDialog({ open, obrigacao, onClose, onSaved }: ConcluirDi
   const [destinatarios, setDestinatarios] = React.useState<Set<string>>(new Set());
   const inputArquivo = React.useRef<HTMLInputElement>(null);
   const contatos = useContatosDaEmpresa(obrigacao?.clienteId ?? null, open);
+  const canais = useCanaisEnvio(open);
+  const [enviarEmail, setEnviarEmail] = React.useState(true);
 
   React.useEffect(() => {
     if (open) {
@@ -49,6 +53,7 @@ export function ConcluirDialog({ open, obrigacao, onClose, onSaved }: ConcluirDi
       setComentario(obrigacao?.tipo?.comentarioPadrao ?? '');
       setErro(null);
       setArquivos([]);
+      setEnviarEmail(true);
     }
   }, [open, obrigacao]);
 
@@ -59,6 +64,8 @@ export function ConcluirDialog({ open, obrigacao, onClose, onSaved }: ConcluirDi
   if (!obrigacao) {
     return null;
   }
+
+  const comEmail = (contatos ?? []).filter((c) => destinatarios.has(c.id) && c.email).length;
 
   async function confirmar(event: React.FormEvent): Promise<void> {
     event.preventDefault();
@@ -74,7 +81,7 @@ export function ConcluirDialog({ open, obrigacao, onClose, onSaved }: ConcluirDi
       if (arquivos.length > 0 && destinatarios.size > 0) {
         await api(`/obrigacoes/${obrigacao.id}/protocolos`, {
           method: 'POST',
-          body: JSON.stringify({ contatoIds: [...destinatarios] }),
+          body: JSON.stringify({ contatoIds: [...destinatarios], enviarEmail: canais.email && enviarEmail }),
         });
       }
       const atualizada = await api<Obrigacao>(`/obrigacoes/${obrigacao.id}/concluir`, {
@@ -180,6 +187,16 @@ export function ConcluirDialog({ open, obrigacao, onClose, onSaved }: ConcluirDi
                   selecionados={destinatarios}
                   onChange={setDestinatarios}
                 />
+                {canais.email ? (
+                  <FormControlLabel
+                    control={<Checkbox checked={enviarEmail} onChange={(event) => setEnviarEmail(event.target.checked)} />}
+                    label={
+                      <Typography variant="body2">
+                        Enviar por e-mail agora ({comEmail} de {destinatarios.size} com e-mail)
+                      </Typography>
+                    }
+                  />
+                ) : null}
               </>
             )}
           </Stack>

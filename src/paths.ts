@@ -16,5 +16,6 @@ export const paths = {
     usuarios: '/dashboard/usuarios',
     setores: '/dashboard/setores',
     feriados: '/dashboard/feriados',
+    emailsCliente: '/dashboard/emails-cliente',
   },
 } as const;

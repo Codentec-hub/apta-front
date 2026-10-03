@@ -15,6 +15,7 @@ import TableCell from '@mui/material/TableCell';
 import TableContainer from '@mui/material/TableContainer';
 import TableHead from '@mui/material/TableHead';
 import TableRow from '@mui/material/TableRow';
+import Tooltip from '@mui/material/Tooltip';
 import Typography from '@mui/material/Typography';
 import { CheckCircleIcon } from '@phosphor-icons/react/dist/ssr/CheckCircle';
 import { WarningIcon } from '@phosphor-icons/react/dist/ssr/Warning';
@@ -385,7 +386,7 @@ export function Overview(): React.JSX.Element {
                 <TableRow>
                   <TableCell>Responsável</TableCell>
                   <TableCell align="center">Antecipadas</TableCell>
-                  <TableCell align="center">No prazo</TableCell>
+                  <TableCell align="center">Prazo técnico</TableCell>
                   <TableCell align="center">Atraso legal</TableCell>
                   <TableCell align="center">Atraso justificado</TableCell>
                   <TableCell align="center">Atraso sem justificativa</TableCell>
@@ -419,6 +420,76 @@ export function Overview(): React.JSX.Element {
           </TableContainer>
         )}
       </Stack>
+
+      {performancePorResponsavel.length > 0 ? <CumprimentoDePrazos linhas={performancePorResponsavel} /> : null}
+    </Stack>
+  );
+}
+
+interface LinhaCumprimento {
+  nome: string;
+  antecipadas: number;
+  noPrazo: number;
+  atrasoLegal: number;
+  atrasoJustificado: number;
+  semJustificativa: number;
+}
+
+// "Cumprimento de Prazos" do Acessórias: % das entregas que já têm desfecho
+// (entregues ou vencidas) e que saíram dentro do prazo legal. Dispensadas e
+// pendentes ainda no prazo ficam fora da conta.
+function CumprimentoDePrazos({ linhas }: { linhas: LinhaCumprimento[] }): React.JSX.Element {
+  const dados = linhas.map((l) => {
+    const noPrazo = l.antecipadas + l.noPrazo;
+    const atrasadas = l.atrasoLegal + l.atrasoJustificado + l.semJustificativa;
+    const total = noPrazo + atrasadas;
+    return { ...l, noPrazoTotal: noPrazo, atrasadas, total, pct: total === 0 ? null : Math.round((noPrazo / total) * 100) };
+  });
+
+  return (
+    <Stack spacing={2}>
+      <Stack spacing={0.5}>
+        <Typography variant="h6">Cumprimento de prazos</Typography>
+        <Typography color="text.secondary" variant="body2">
+          Entregas dentro do prazo legal sobre o total que já venceu ou foi entregue (sem dispensadas).
+        </Typography>
+      </Stack>
+      <Paper variant="outlined" sx={{ p: 3 }}>
+        <Stack spacing={1.25}>
+          {dados.map((d) => (
+            <Tooltip
+              key={d.nome}
+              placement="top"
+              title={
+                d.total === 0 ? (
+                  'Nenhuma entrega com prazo vencido ainda'
+                ) : (
+                  <span>
+                    {d.noPrazoTotal} no prazo ({d.antecipadas} antecipadas, {d.noPrazo} prazo técnico)
+                    <br />
+                    {d.atrasadas} com atraso ({d.atrasoLegal} legal, {d.atrasoJustificado} justificado, {d.semJustificativa} sem
+                    justificativa)
+                  </span>
+                )
+              }
+            >
+              <Box sx={{ display: 'grid', gridTemplateColumns: { xs: '110px 1fr 48px', sm: '180px 1fr 48px' }, gap: 2, alignItems: 'center', py: 0.5 }}>
+                <Typography variant="body2" noWrap>
+                  {d.nome}
+                </Typography>
+                <Box sx={{ height: 12, bgcolor: 'var(--mui-palette-action-hover)', borderRadius: '0 4px 4px 0' }}>
+                  {d.pct ? (
+                    <Box sx={{ height: '100%', width: `${d.pct}%`, bgcolor: 'primary.main', borderRadius: '0 4px 4px 0' }} />
+                  ) : null}
+                </Box>
+                <Typography variant="body2" color={d.pct === null ? 'text.secondary' : 'text.primary'} sx={{ textAlign: 'right', fontVariantNumeric: 'tabular-nums' }}>
+                  {d.pct === null ? '—' : `${d.pct}%`}
+                </Typography>
+              </Box>
+            </Tooltip>
+          ))}
+        </Stack>
+      </Paper>
     </Stack>
   );
 }

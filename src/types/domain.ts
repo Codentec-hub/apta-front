@@ -162,6 +162,7 @@ export interface ConfiguracaoEvolution {
   apiKeyConfigurada: boolean;
   apiKeyMascarada: string | null;
   origem: 'banco' | 'ambiente' | 'nenhuma';
+  urlPainel: string | null;
 }
 
 // Resumo que vem em cada linha da Lista de Entregas.

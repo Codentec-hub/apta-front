@@ -9,6 +9,7 @@ import Snackbar from '@mui/material/Snackbar';
 import Stack from '@mui/material/Stack';
 import TextField from '@mui/material/TextField';
 import Typography from '@mui/material/Typography';
+import { ArrowSquareOutIcon } from '@phosphor-icons/react/dist/ssr/ArrowSquareOut';
 
 import { api } from '@/lib/api';
 import { useUser } from '@/hooks/use-user';
@@ -111,6 +112,7 @@ function EvolutionSection({ podeEditar }: { podeEditar: boolean }): React.JSX.El
   const [url, setUrl] = React.useState('');
   const [instancia, setInstancia] = React.useState('');
   const [apiKey, setApiKey] = React.useState('');
+  const [urlPainel, setUrlPainel] = React.useState('');
   const [erro, setErro] = React.useState<string | null>(null);
   const [salvando, setSalvando] = React.useState(false);
   const [salvo, setSalvo] = React.useState(false);
@@ -121,6 +123,7 @@ function EvolutionSection({ podeEditar }: { podeEditar: boolean }): React.JSX.El
         setConfig(c);
         setUrl(c.url ?? '');
         setInstancia(c.instancia ?? '');
+        setUrlPainel(c.urlPainel ?? '');
       })
       .catch((error: unknown) => setErro(error instanceof Error ? error.message : 'Erro ao carregar'));
   }, []);
@@ -138,6 +141,7 @@ function EvolutionSection({ podeEditar }: { podeEditar: boolean }): React.JSX.El
           url: url.trim() || undefined,
           instancia: instancia.trim() || undefined,
           apiKey: apiKey.trim() || undefined,
+          urlPainel: urlPainel.trim() || undefined,
         }),
       });
       setApiKey('');
@@ -150,12 +154,27 @@ function EvolutionSection({ podeEditar }: { podeEditar: boolean }): React.JSX.El
     }
   }
 
+  const baseUrlPainel = urlPainel.trim() || url.trim();
+
   return (
     <Paper variant="outlined" sx={{ p: 3, maxWidth: 720 }}>
       <Stack component="form" spacing={3} onSubmit={salvar}>
-        <Stack direction="row" spacing={1} sx={{ alignItems: 'center' }}>
-          <Typography variant="h6">WhatsApp (Evolution API)</Typography>
-          {config ? chipOrigem(config.origem) : null}
+        <Stack direction="row" spacing={1} sx={{ alignItems: 'center', justifyContent: 'space-between' }}>
+          <Stack direction="row" spacing={1} sx={{ alignItems: 'center' }}>
+            <Typography variant="h6">WhatsApp (Evolution API)</Typography>
+            {config ? chipOrigem(config.origem) : null}
+          </Stack>
+          <Button
+            component="a"
+            href={baseUrlPainel ? `${baseUrlPainel.replace(/\/+$/, '')}/manager` : undefined}
+            target="_blank"
+            rel="noopener noreferrer"
+            size="small"
+            startIcon={<ArrowSquareOutIcon />}
+            disabled={!baseUrlPainel}
+          >
+            Abrir painel
+          </Button>
         </Stack>
         <Typography color="text.secondary" variant="body2">
           Instância própria (self-hosted) que conecta o número de WhatsApp do atendimento ao sistema.
@@ -167,6 +186,16 @@ function EvolutionSection({ podeEditar }: { podeEditar: boolean }): React.JSX.El
           onChange={(e) => setUrl(e.target.value)}
           disabled={!podeEditar || !config}
           placeholder="https://..."
+          helperText="Usada pelo sistema pra enviar mensagens. Pode ser um endereço interno (ex.: rede do servidor), que não abre no navegador."
+          fullWidth
+        />
+        <TextField
+          label="URL do painel (Manager)"
+          value={urlPainel}
+          onChange={(e) => setUrlPainel(e.target.value)}
+          disabled={!podeEditar || !config}
+          placeholder="https://..."
+          helperText="Endereço público, só pra abrir o painel de administração (botão acima). Deixe em branco se a URL da instância já for pública."
           fullWidth
         />
         <TextField

@@ -27,6 +27,8 @@ import { paths } from '@/paths';
 import { pontualidadeDaObrigacao, statusDaObrigacao } from '@/lib/obrigacao-status';
 import type { Indicadores, Obrigacao } from '@/types/domain';
 
+import { PrimeirosPassos } from './primeiros-passos';
+
 interface Cliente {
   id: string;
   razaoSocial: string;
@@ -197,6 +199,8 @@ export function Overview(): React.JSX.Element {
           <Chip color={STATUS_COLOR[apiStatus]} label={apiStatus} size="small" variant="outlined" />
         </Stack>
       </Stack>
+
+      <PrimeirosPassos />
 
       <Stack spacing={2}>
         <Typography variant="h6">O que precisa de você</Typography>

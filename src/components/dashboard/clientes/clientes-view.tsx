@@ -24,10 +24,11 @@ import Typography from '@mui/material/Typography';
 import { PencilSimpleIcon } from '@phosphor-icons/react/dist/ssr/PencilSimple';
 import { PlusIcon } from '@phosphor-icons/react/dist/ssr/Plus';
 
-import { api } from '@/lib/api';
-import { usePaginacao } from '@/hooks/use-paginacao';
-import { paths } from '@/paths';
 import type { Cliente, Setor, UsuarioResumo } from '@/types/domain';
+import { paths } from '@/paths';
+import { api } from '@/lib/api';
+import { formatarCodigo, formatarDocumento, somenteDigitos } from '@/lib/empresa';
+import { usePaginacao } from '@/hooks/use-paginacao';
 
 import { ClienteFormDialog } from './cliente-form-dialog';
 
@@ -44,11 +45,7 @@ export function ClientesView(): React.JSX.Element {
 
   const carregar = React.useCallback(() => {
     setCarregando(true);
-    Promise.all([
-      api<Cliente[]>('/clientes'),
-      api<Setor[]>('/setores'),
-      api<UsuarioResumo[]>('/usuarios'),
-    ])
+    Promise.all([api<Cliente[]>('/clientes'), api<Setor[]>('/setores'), api<UsuarioResumo[]>('/usuarios')])
       .then(([clientesData, setoresData, usuariosData]) => {
         setClientes(clientesData);
         setSetores(setoresData);
@@ -70,7 +67,7 @@ export function ClientesView(): React.JSX.Element {
     return clientes.filter(
       (c) =>
         c.razaoSocial.toLowerCase().includes(termo) ||
-        c.cnpj.toLowerCase().includes(termo) ||
+        (somenteDigitos(termo).length >= 3 && c.cnpj.includes(somenteDigitos(termo))) ||
         (c.nomeFantasia ?? '').toLowerCase().includes(termo) ||
         (c.apelido ?? '').toLowerCase().includes(termo) ||
         String(c.codigo) === termo.replace(/^0+/, '')
@@ -170,7 +167,7 @@ export function ClientesView(): React.JSX.Element {
                 <TableRow key={cliente.id} hover>
                   <TableCell>
                     <Link component={RouterLink} href={`${paths.dashboard.clientes}/${cliente.id}`} variant="body2">
-                      {cliente.razaoSocial} [{String(cliente.codigo).padStart(3, '0')}]
+                      {cliente.razaoSocial} [{formatarCodigo(cliente.codigo)}]
                     </Link>
                     {cliente.nomeFantasia ? (
                       <Typography color="text.secondary" variant="caption" sx={{ display: 'block' }}>
@@ -178,7 +175,7 @@ export function ClientesView(): React.JSX.Element {
                       </Typography>
                     ) : null}
                   </TableCell>
-                  <TableCell>{cliente.cnpj}</TableCell>
+                  <TableCell>{formatarDocumento(cliente.cnpj)}</TableCell>
                   <TableCell>
                     {cliente.cidade ? `${cliente.cidade}${cliente.uf ? ` [${cliente.uf}]` : ''}` : '—'}
                     {cliente.grupoEmpresas ? (

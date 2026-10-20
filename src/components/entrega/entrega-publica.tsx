@@ -22,7 +22,14 @@ interface EntregaPublicaDados {
   destinatarioNome: string;
   createdAt: string;
   empresa: { razaoSocial: string; cnpj: string };
-  obrigacao: { nome: string; competencia: string | null; competenciaAnual: boolean; prazo: string; entregueEm: string | null };
+  obrigacao: {
+    nome: string;
+    competencia: string | null;
+    competenciaAnual: boolean;
+    prazo: string;
+    valorGuia: number | null;
+    entregueEm: string | null;
+  };
   documentos: { id: string; nomeArquivo: string; tamanho: number }[];
 }
 
@@ -79,6 +86,16 @@ export function EntregaPublica({ token }: { token: string }): React.JSX.Element 
                     </Typography>
                     <Typography variant="body2">{dayjs(dados.obrigacao.prazo).format('DD/MM/YYYY')}</Typography>
                   </div>
+                  {dados.obrigacao.valorGuia == null ? null : (
+                    <div>
+                      <Typography variant="caption" color="text.secondary">
+                        Valor
+                      </Typography>
+                      <Typography variant="body2" sx={{ fontWeight: 600 }}>
+                        {dados.obrigacao.valorGuia.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}
+                      </Typography>
+                    </div>
+                  )}
                   <div>
                     <Typography variant="caption" color="text.secondary">
                       Para

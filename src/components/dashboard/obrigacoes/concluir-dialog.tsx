@@ -18,11 +18,16 @@ import { DatePicker } from '@mui/x-date-pickers/DatePicker';
 import { PaperclipIcon } from '@phosphor-icons/react/dist/ssr/Paperclip';
 import dayjs, { type Dayjs } from 'dayjs';
 
+import type { Obrigacao } from '@/types/domain';
 import { api } from '@/lib/api';
 import { anexarDocumento, formatarTamanho } from '@/lib/documentos-entrega';
-import type { Obrigacao } from '@/types/domain';
 
-import { destinatariosPadrao, SeletorDestinatarios, useCanaisEnvio, useContatosDaEmpresa } from './documentos-entrega-dialog';
+import {
+  destinatariosPadrao,
+  SeletorDestinatarios,
+  useCanaisEnvio,
+  useContatosDaEmpresa,
+} from './documentos-entrega-dialog';
 
 export interface ConcluirDialogProps {
   open: boolean;
@@ -33,6 +38,7 @@ export interface ConcluirDialogProps {
 
 export function ConcluirDialog({ open, obrigacao, onClose, onSaved }: ConcluirDialogProps): React.JSX.Element | null {
   const [tempoRealMinutos, setTempoRealMinutos] = React.useState('');
+  const [valorGuia, setValorGuia] = React.useState('');
   const [entregueEm, setEntregueEm] = React.useState<Dayjs | null>(dayjs());
   const [comentario, setComentario] = React.useState('');
   const [salvando, setSalvando] = React.useState(false);
@@ -45,15 +51,25 @@ export function ConcluirDialog({ open, obrigacao, onClose, onSaved }: ConcluirDi
   const contatos = useContatosDaEmpresa(obrigacao?.clienteId ?? null, open);
   const canais = useCanaisEnvio(open);
   const [enviarEmail, setEnviarEmail] = React.useState(true);
+  // Atraso (entrega depois do prazo legal, sem justificativa anterior).
+  const [justificativa, setJustificativa] = React.useState('');
+  const [causaRaiz, setCausaRaiz] = React.useState('');
+  const [planoDeAcao, setPlanoDeAcao] = React.useState('');
+  const [prazoPrometido, setPrazoPrometido] = React.useState<Dayjs | null>(dayjs().add(7, 'day'));
 
   React.useEffect(() => {
     if (open) {
       setTempoRealMinutos('');
+      setValorGuia(obrigacao?.valorGuia == null ? '' : String(obrigacao.valorGuia).replace('.', ','));
       setEntregueEm(dayjs());
       setComentario(obrigacao?.tipo?.comentarioPadrao ?? '');
       setErro(null);
       setArquivos([]);
       setEnviarEmail(true);
+      setJustificativa('');
+      setCausaRaiz('');
+      setPlanoDeAcao('');
+      setPrazoPrometido(dayjs().add(7, 'day'));
     }
   }, [open, obrigacao]);
 
@@ -66,15 +82,32 @@ export function ConcluirDialog({ open, obrigacao, onClose, onSaved }: ConcluirDi
   }
 
   const comEmail = (contatos ?? []).filter((c) => destinatarios.has(c.id) && c.email).length;
+  const dataEntrega = !entregueEm || entregueEm.isSame(dayjs(), 'day') ? dayjs() : entregueEm.hour(12);
+  const exigeJustificativa = dataEntrega.isAfter(dayjs(obrigacao.prazo)) && !obrigacao.atraso;
 
   async function confirmar(event: React.FormEvent): Promise<void> {
     event.preventDefault();
     if (!obrigacao) {
       return;
     }
+    // Valida antes de anexar/enviar: o cliente não recebe a guia de uma
+    // entrega que acabou não sendo registrada.
+    if (exigeJustificativa && (!justificativa.trim() || !causaRaiz.trim() || !planoDeAcao.trim() || !prazoPrometido)) {
+      setErro('Entrega fora do prazo legal: preencha justificativa, causa raiz, plano de ação e o prazo do plano');
+      return;
+    }
+    const valor = valorGuia.trim() ? Number(valorGuia.replaceAll('.', '').replace(',', '.')) : null;
+    if (valor !== null && (Number.isNaN(valor) || valor < 0)) {
+      setErro('Valor da guia inválido (ex.: 1.234,56)');
+      return;
+    }
     setSalvando(true);
     setErro(null);
     try {
+      // O valor vai no e-mail do protocolo: grava antes de gerar.
+      if (valor !== (obrigacao.valorGuia ?? null)) {
+        await api(`/obrigacoes/${obrigacao.id}`, { method: 'PUT', body: JSON.stringify({ valorGuia: valor }) });
+      }
       // Anexa antes de concluir: se um upload falhar, a entrega não fica
       // marcada sem o documento.
       for (const arquivo of arquivos) await anexarDocumento(obrigacao.id, arquivo);
@@ -94,6 +127,14 @@ export function ConcluirDialog({ open, obrigacao, onClose, onSaved }: ConcluirDi
               ? null
               : entregueEm.hour(12).minute(0).second(0).toISOString(),
           comentario: comentario.trim() || null,
+          atraso: exigeJustificativa
+            ? {
+                justificativa: justificativa.trim(),
+                causaRaiz: causaRaiz.trim(),
+                planoDeAcao: planoDeAcao.trim(),
+                prazoPrometido: prazoPrometido!.toISOString(),
+              }
+            : null,
         }),
       });
       onSaved(atualizada);
@@ -123,6 +164,16 @@ export function ConcluirDialog({ open, obrigacao, onClose, onSaved }: ConcluirDi
               format="DD/MM/YYYY"
             />
             <TextField
+              label="Valor da guia (R$)"
+              value={valorGuia}
+              onChange={(event) => setValorGuia(event.target.value)}
+              inputMode="decimal"
+              placeholder="0,00"
+              helperText="Opcional. Vai junto no e-mail e na página do cliente."
+              autoFocus
+              fullWidth
+            />
+            <TextField
               label="Tempo gasto (min)"
               type="number"
               value={tempoRealMinutos}
@@ -132,9 +183,53 @@ export function ConcluirDialog({ open, obrigacao, onClose, onSaved }: ConcluirDi
                   ? `Tempo previsto para este tipo: ${obrigacao.tipo.tempoPrevistoMinutos} min`
                   : 'Opcional — ajuda a medir a produtividade real'
               }
-              autoFocus
               fullWidth
             />
+            {exigeJustificativa ? (
+              <Stack spacing={2} sx={{ p: 2, borderRadius: 1, border: '1px solid', borderColor: 'error.light' }}>
+                <Alert severity="error" sx={{ py: 0 }}>
+                  Prazo legal era {dayjs(obrigacao.prazo).format('DD/MM/YYYY')}. Entrega em atraso exige justificativa e
+                  plano de ação, que depois é acompanhado até ser cumprido.
+                </Alert>
+                <TextField
+                  label="Justificativa"
+                  helperText="Por que essa entrega atrasou?"
+                  value={justificativa}
+                  onChange={(event) => setJustificativa(event.target.value)}
+                  multiline
+                  minRows={2}
+                  required
+                  fullWidth
+                />
+                <TextField
+                  label="Causa raiz"
+                  helperText="Qual o motivo de fundo, para evitar que se repita?"
+                  value={causaRaiz}
+                  onChange={(event) => setCausaRaiz(event.target.value)}
+                  multiline
+                  minRows={2}
+                  required
+                  fullWidth
+                />
+                <TextField
+                  label="Plano de ação"
+                  helperText="O que será feito para não repetir?"
+                  value={planoDeAcao}
+                  onChange={(event) => setPlanoDeAcao(event.target.value)}
+                  multiline
+                  minRows={2}
+                  required
+                  fullWidth
+                />
+                <DatePicker
+                  label="Prazo prometido para cumprir o plano"
+                  value={prazoPrometido}
+                  onChange={setPrazoPrometido}
+                  minDate={dayjs()}
+                  format="DD/MM/YYYY"
+                />
+              </Stack>
+            ) : null}
             <TextField
               label="Comentário"
               value={comentario}
@@ -189,7 +284,9 @@ export function ConcluirDialog({ open, obrigacao, onClose, onSaved }: ConcluirDi
                 />
                 {canais.email ? (
                   <FormControlLabel
-                    control={<Checkbox checked={enviarEmail} onChange={(event) => setEnviarEmail(event.target.checked)} />}
+                    control={
+                      <Checkbox checked={enviarEmail} onChange={(event) => setEnviarEmail(event.target.checked)} />
+                    }
                     label={
                       <Typography variant="body2">
                         Enviar por e-mail agora ({comEmail} de {destinatarios.size} com e-mail)

@@ -6,6 +6,7 @@ import Button from '@mui/material/Button';
 import Checkbox from '@mui/material/Checkbox';
 import Chip from '@mui/material/Chip';
 import FormControl from '@mui/material/FormControl';
+import FormControlLabel from '@mui/material/FormControlLabel';
 import IconButton from '@mui/material/IconButton';
 import InputLabel from '@mui/material/InputLabel';
 import ListItemText from '@mui/material/ListItemText';
@@ -25,8 +26,9 @@ import { PencilSimpleIcon } from '@phosphor-icons/react/dist/ssr/PencilSimple';
 import { PlusIcon } from '@phosphor-icons/react/dist/ssr/Plus';
 import { TrashIcon } from '@phosphor-icons/react/dist/ssr/Trash';
 
-import { api } from '@/lib/api';
 import type { ContatoCliente, Setor } from '@/types/domain';
+import { api } from '@/lib/api';
+import { formatarCelular } from '@/lib/empresa';
 
 // "Todos" = recebe documentos de todos os departamentos.
 const TODOS = '__todos__';
@@ -37,9 +39,10 @@ interface FormContato {
   celular: string;
   email: string;
   recebe: string[]; // [TODOS] ou ids de setor
+  responsavelLegal: boolean;
 }
 
-const VAZIO: FormContato = { nome: '', cargo: '', celular: '', email: '', recebe: [TODOS] };
+const VAZIO: FormContato = { nome: '', cargo: '', celular: '', email: '', recebe: [TODOS], responsavelLegal: false };
 
 export interface ContatosEmpresaProps {
   clienteId: string;
@@ -82,6 +85,7 @@ export function ContatosEmpresa({ clienteId, setores, onChange }: ContatosEmpres
             celular: contato.celular ?? '',
             email: contato.email ?? '',
             recebe: contato.recebeTodos ? [TODOS] : contato.setores.map((s) => s.id),
+            responsavelLegal: contato.responsavelLegal,
           }
         : VAZIO
     );
@@ -101,13 +105,17 @@ export function ContatosEmpresa({ clienteId, setores, onChange }: ContatosEmpres
       email: form.email.trim() || null,
       recebeTodos,
       setorIds: recebeTodos ? [] : form.recebe,
+      responsavelLegal: form.responsavelLegal,
     };
     setSalvando(true);
     setErro(null);
     try {
       const salvo = editandoId
         ? await api<ContatoCliente>(`/contatos/${editandoId}`, { method: 'PUT', body: JSON.stringify(payload) })
-        : await api<ContatoCliente>(`/clientes/${clienteId}/contatos`, { method: 'POST', body: JSON.stringify(payload) });
+        : await api<ContatoCliente>(`/clientes/${clienteId}/contatos`, {
+            method: 'POST',
+            body: JSON.stringify(payload),
+          });
       const lista = editandoId ? contatos.map((c) => (c.id === salvo.id ? salvo : c)) : [...contatos, salvo];
       atualizar(lista.toSorted((a, b) => a.nome.localeCompare(b.nome)));
       setAberto(false);
@@ -149,8 +157,21 @@ export function ContatosEmpresa({ clienteId, setores, onChange }: ContatosEmpres
         <Paper variant="outlined" sx={{ p: 1.5 }}>
           <Stack spacing={1.5}>
             <Stack direction={{ xs: 'column', sm: 'row' }} spacing={1.5}>
-              <TextField size="small" label="Nome" value={form.nome} onChange={(e) => setForm((f) => ({ ...f, nome: e.target.value }))} fullWidth autoFocus />
-              <TextField size="small" label="Cargo" value={form.cargo} onChange={(e) => setForm((f) => ({ ...f, cargo: e.target.value }))} fullWidth />
+              <TextField
+                size="small"
+                label="Nome"
+                value={form.nome}
+                onChange={(e) => setForm((f) => ({ ...f, nome: e.target.value }))}
+                fullWidth
+                autoFocus
+              />
+              <TextField
+                size="small"
+                label="Cargo"
+                value={form.cargo}
+                onChange={(e) => setForm((f) => ({ ...f, cargo: e.target.value }))}
+                fullWidth
+              />
             </Stack>
             <Stack direction={{ xs: 'column', sm: 'row' }} spacing={1.5}>
               <TextField
@@ -160,7 +181,14 @@ export function ContatosEmpresa({ clienteId, setores, onChange }: ContatosEmpres
                 onChange={(e) => setForm((f) => ({ ...f, celular: e.target.value }))}
                 fullWidth
               />
-              <TextField size="small" label="E-mail" type="email" value={form.email} onChange={(e) => setForm((f) => ({ ...f, email: e.target.value }))} fullWidth />
+              <TextField
+                size="small"
+                label="E-mail"
+                type="email"
+                value={form.email}
+                onChange={(e) => setForm((f) => ({ ...f, email: e.target.value }))}
+                fullWidth
+              />
             </Stack>
             <FormControl size="small" fullWidth>
               <InputLabel id="contato-recebe">Recebe documentos de</InputLabel>
@@ -169,7 +197,9 @@ export function ContatosEmpresa({ clienteId, setores, onChange }: ContatosEmpres
                 label="Recebe documentos de"
                 multiple
                 value={form.recebe}
-                onChange={(e) => alterarRecebe(typeof e.target.value === 'string' ? e.target.value.split(',') : e.target.value)}
+                onChange={(e) =>
+                  alterarRecebe(typeof e.target.value === 'string' ? e.target.value.split(',') : e.target.value)
+                }
                 renderValue={(valor) =>
                   valor.includes(TODOS)
                     ? 'Todos os departamentos'
@@ -188,6 +218,16 @@ export function ContatosEmpresa({ clienteId, setores, onChange }: ContatosEmpres
                 ))}
               </Select>
             </FormControl>
+            <FormControlLabel
+              control={
+                <Checkbox
+                  size="small"
+                  checked={form.responsavelLegal}
+                  onChange={(e) => setForm((f) => ({ ...f, responsavelLegal: e.target.checked }))}
+                />
+              }
+              label={<Typography variant="body2">Responsável legal da empresa (perante a Receita)</Typography>}
+            />
             <Stack direction="row" spacing={1} sx={{ justifyContent: 'flex-end' }}>
               <Button size="small" onClick={() => setAberto(false)}>
                 Cancelar
@@ -218,7 +258,18 @@ export function ContatosEmpresa({ clienteId, setores, onChange }: ContatosEmpres
             {contatos.map((c) => (
               <TableRow key={c.id}>
                 <TableCell>
-                  <Typography variant="body2">{c.nome}</Typography>
+                  <Stack direction="row" spacing={0.75} sx={{ alignItems: 'center' }}>
+                    <Typography variant="body2">{c.nome}</Typography>
+                    {c.responsavelLegal ? (
+                      <Chip
+                        size="small"
+                        label="Resp. legal"
+                        color="secondary"
+                        variant="outlined"
+                        sx={{ height: 18, fontSize: 10 }}
+                      />
+                    ) : null}
+                  </Stack>
                   {c.cargo ? (
                     <Typography variant="caption" color="text.secondary">
                       {c.cargo}
@@ -227,7 +278,7 @@ export function ContatosEmpresa({ clienteId, setores, onChange }: ContatosEmpres
                 </TableCell>
                 <TableCell>
                   <Typography variant="caption" sx={{ display: 'block' }}>
-                    {c.celular ?? '—'}
+                    {c.celular ? formatarCelular(c.celular) : '—'}
                   </Typography>
                   <Typography variant="caption" color="text.secondary">
                     {c.email ?? '—'}

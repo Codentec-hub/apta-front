@@ -21,6 +21,7 @@ import { DatePicker } from '@mui/x-date-pickers/DatePicker';
 import dayjs, { type Dayjs } from 'dayjs';
 
 import { api } from '@/lib/api';
+import { formatarCodigo, formatarDocumento } from '@/lib/empresa';
 import type { Cliente, Obrigacao, Setor, TipoObrigacao, UsuarioResumo } from '@/types/domain';
 
 function mesmoDia(a: Dayjs | null, b: string | null | undefined): boolean {
@@ -170,7 +171,7 @@ export function ObrigacaoFormDialog({
               options={clientes}
               value={cliente}
               disabled={Boolean(obrigacao)}
-              getOptionLabel={(option) => `${option.razaoSocial} — ${option.cnpj}`}
+              getOptionLabel={(option) => `[${formatarCodigo(option.codigo)}] ${option.razaoSocial} — ${formatarDocumento(option.cnpj)}`}
               isOptionEqualToValue={(option, value) => option.id === value.id}
               onChange={(_event, value) => setCliente(value)}
               renderInput={(params) => <TextField {...params} label="Empresa" required />}

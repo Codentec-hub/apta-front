@@ -2,6 +2,7 @@
 
 import * as React from 'react';
 import RouterLink from 'next/link';
+import { useRouter } from 'next/navigation';
 import Alert from '@mui/material/Alert';
 import Button from '@mui/material/Button';
 import Chip from '@mui/material/Chip';
@@ -20,39 +21,33 @@ import Typography from '@mui/material/Typography';
 import { ArrowLeftIcon } from '@phosphor-icons/react/dist/ssr/ArrowLeft';
 import { PencilSimpleIcon } from '@phosphor-icons/react/dist/ssr/PencilSimple';
 import { PlusIcon } from '@phosphor-icons/react/dist/ssr/Plus';
+import { WhatsappLogoIcon } from '@phosphor-icons/react/dist/ssr/WhatsappLogo';
 import dayjs from 'dayjs';
 
-import { api } from '@/lib/api';
-import { paths } from '@/paths';
-import { competenciaAnual, formatarCompetencia, statusDaObrigacao } from '@/lib/obrigacao-status';
 import type {
   Atendimento,
   Cliente,
-  Demanda,
-  LancamentoFinanceiro,
+  MotivoAtendimento,
   Obrigacao,
   Setor,
   TipoObrigacao,
   UsuarioResumo,
 } from '@/types/domain';
+import { paths } from '@/paths';
+import { api } from '@/lib/api';
+import { formatarCodigo, formatarDocumento } from '@/lib/empresa';
+import { competenciaAnual, formatarCompetencia, statusDaObrigacao } from '@/lib/obrigacao-status';
+import { useUser } from '@/hooks/use-user';
 
-import { ClienteFormDialog } from './cliente-form-dialog';
-import { ContatosEmpresa } from './contatos-empresa';
+import { RegistrarAtendimentoDialog } from '../atendimento/dialogs-conversa';
 import { ObrigacaoFormDialog } from '../obrigacoes/obrigacao-form-dialog';
 import { ObrigacoesDaEmpresa } from '../obrigacoes/obrigacoes-da-empresa';
-import { DemandaFormDialog } from '../demandas/demanda-form-dialog';
-import { AtendimentoFormDialog } from '../atendimento/atendimento-form-dialog';
-import { LancamentoFormDialog } from '../financeiro/lancamento-form-dialog';
-
-const formatoMoeda = new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' });
-
-const STATUS_DEMANDA_LABEL: Record<Demanda['status'], string> = {
-  A_FAZER: 'A fazer',
-  EM_ANDAMENTO: 'Em andamento',
-  CONCLUIDA: 'Concluída',
-};
+import { ClienteFormDialog } from './cliente-form-dialog';
+import { ContatosEmpresa } from './contatos-empresa';
+import { DadosFiscais } from './dados-fiscais';
 
 const STATUS_ATENDIMENTO_LABEL: Record<Atendimento['status'], string> = {
+  TRIAGEM: 'Triagem',
   AGUARDANDO: 'Aguardando',
   EM_ATENDIMENTO: 'Em atendimento',
   FINALIZADO: 'Finalizado',
@@ -63,22 +58,21 @@ export interface ClienteDetalheViewProps {
 }
 
 export function ClienteDetalheView({ clienteId }: ClienteDetalheViewProps): React.JSX.Element {
+  const router = useRouter();
+  const { user } = useUser();
   const [cliente, setCliente] = React.useState<Cliente | null>(null);
   const [setores, setSetores] = React.useState<Setor[]>([]);
   const [usuarios, setUsuarios] = React.useState<UsuarioResumo[]>([]);
   const [obrigacoes, setObrigacoes] = React.useState<Obrigacao[]>([]);
   const [tipos, setTipos] = React.useState<TipoObrigacao[]>([]);
-  const [demandas, setDemandas] = React.useState<Demanda[]>([]);
   const [atendimentos, setAtendimentos] = React.useState<Atendimento[]>([]);
-  const [lancamentos, setLancamentos] = React.useState<LancamentoFinanceiro[]>([]);
+  const [motivos, setMotivos] = React.useState<MotivoAtendimento[]>([]);
   const [erro, setErro] = React.useState<string | null>(null);
   const [carregando, setCarregando] = React.useState(true);
 
   const [dialogClienteAberto, setDialogClienteAberto] = React.useState(false);
   const [dialogObrigacaoAberto, setDialogObrigacaoAberto] = React.useState(false);
-  const [dialogDemandaAberto, setDialogDemandaAberto] = React.useState(false);
   const [dialogAtendimentoAberto, setDialogAtendimentoAberto] = React.useState(false);
-  const [dialogLancamentoAberto, setDialogLancamentoAberto] = React.useState(false);
 
   const carregar = React.useCallback(() => {
     setCarregando(true);
@@ -87,20 +81,18 @@ export function ClienteDetalheView({ clienteId }: ClienteDetalheViewProps): Reac
       api<Setor[]>('/setores'),
       api<UsuarioResumo[]>('/usuarios'),
       api<Obrigacao[]>(`/obrigacoes?clienteId=${clienteId}`),
-      api<Demanda[]>(`/demandas?clienteId=${clienteId}`),
       api<Atendimento[]>(`/atendimentos?clienteId=${clienteId}`),
-      api<LancamentoFinanceiro[]>(`/financeiro/lancamentos?clienteId=${clienteId}`),
       api<TipoObrigacao[]>('/tipos-obrigacao'),
+      api<MotivoAtendimento[]>('/motivos-atendimento'),
     ])
-      .then(([clienteData, setoresData, usuariosData, obrigacoesData, demandasData, atendimentosData, lancamentosData, tiposData]) => {
+      .then(([clienteData, setoresData, usuariosData, obrigacoesData, atendimentosData, tiposData, motivosData]) => {
         setTipos(tiposData);
         setCliente(clienteData);
         setSetores(setoresData);
         setUsuarios(usuariosData.filter((u) => u.ativo));
         setObrigacoes(obrigacoesData);
-        setDemandas(demandasData);
         setAtendimentos(atendimentosData);
-        setLancamentos(lancamentosData);
+        setMotivos(motivosData);
       })
       .catch((error: unknown) => setErro(error instanceof Error ? error.message : 'Erro ao carregar cliente'))
       .finally(() => setCarregando(false));
@@ -139,16 +131,6 @@ export function ClienteDetalheView({ clienteId }: ClienteDetalheViewProps): Reac
 
   const clientesParaDialog = [cliente];
 
-  const resumoFinanceiro = lancamentos.reduce(
-    (acc, l) => {
-      if (l.liquidadoEm) return acc;
-      if (l.tipo === 'PAGAR') acc.aPagar += l.valor;
-      else acc.aReceber += l.valor;
-      return acc;
-    },
-    { aPagar: 0, aReceber: 0 }
-  );
-
   return (
     <Stack spacing={4}>
       <Stack spacing={1}>
@@ -164,7 +146,7 @@ export function ClienteDetalheView({ clienteId }: ClienteDetalheViewProps): Reac
           <Stack spacing={0.5}>
             <Stack direction="row" spacing={1} sx={{ alignItems: 'center' }}>
               <Typography variant="h4">
-                [{cliente.codigo}] {cliente.razaoSocial}
+                [{formatarCodigo(cliente.codigo)}] {cliente.razaoSocial}
               </Typography>
               <Chip
                 label={cliente.ativo ? 'Ativo' : 'Inativo'}
@@ -174,7 +156,7 @@ export function ClienteDetalheView({ clienteId }: ClienteDetalheViewProps): Reac
               />
             </Stack>
             <Typography color="text.secondary" variant="body2">
-              {cliente.cnpj} {cliente.regimeTributario ? `· ${cliente.regimeTributario}` : ''}
+              {formatarDocumento(cliente.cnpj)} {cliente.regimeTributario ? `· ${cliente.regimeTributario}` : ''}
               {cliente.nomeFantasia ? ` · ${cliente.nomeFantasia}` : ''}
               {cliente.cidade ? ` · ${cliente.cidade}${cliente.uf ? `/${cliente.uf}` : ''}` : ''}
             </Typography>
@@ -183,6 +165,7 @@ export function ClienteDetalheView({ clienteId }: ClienteDetalheViewProps): Reac
             Editar cliente
           </Button>
         </Stack>
+        <DadosFiscais cliente={cliente} />
       </Stack>
 
       <Stack spacing={1}>
@@ -249,9 +232,13 @@ export function ClienteDetalheView({ clienteId }: ClienteDetalheViewProps): Reac
                     <TableRow key={obrigacao.id}>
                       <TableCell>{obrigacao.nome}</TableCell>
                       <TableCell>{obrigacao.setor.nome}</TableCell>
-                      <TableCell>{formatarCompetencia(obrigacao.competencia, competenciaAnual(obrigacao.tipo))}</TableCell>
+                      <TableCell>
+                        {formatarCompetencia(obrigacao.competencia, competenciaAnual(obrigacao.tipo))}
+                      </TableCell>
                       <TableCell>{dayjs(obrigacao.prazo).format('DD/MM/YYYY')}</TableCell>
-                      <TableCell>{obrigacao.concluidaEm ? dayjs(obrigacao.concluidaEm).format('DD/MM/YYYY') : '—'}</TableCell>
+                      <TableCell>
+                        {obrigacao.concluidaEm ? dayjs(obrigacao.concluidaEm).format('DD/MM/YYYY') : '—'}
+                      </TableCell>
                       <TableCell>
                         <Chip label={info.label} color={info.color} size="small" variant="outlined" />
                       </TableCell>
@@ -266,49 +253,20 @@ export function ClienteDetalheView({ clienteId }: ClienteDetalheViewProps): Reac
 
       <Stack spacing={2}>
         <Stack direction="row" sx={{ alignItems: 'center', justifyContent: 'space-between' }}>
-          <Typography variant="h6">Demandas</Typography>
-          <Button size="small" startIcon={<PlusIcon />} onClick={() => setDialogDemandaAberto(true)}>
-            Nova demanda
-          </Button>
-        </Stack>
-        {demandas.length === 0 ? (
-          <Typography color="text.secondary" variant="body2" sx={{ fontStyle: 'italic' }}>
-            Nenhuma demanda cadastrada para este cliente.
-          </Typography>
-        ) : (
-          <TableContainer component={Paper} variant="outlined">
-            <Table size="small">
-              <TableHead>
-                <TableRow>
-                  <TableCell>Título</TableCell>
-                  <TableCell>Setor</TableCell>
-                  <TableCell>Responsável</TableCell>
-                  <TableCell>Status</TableCell>
-                </TableRow>
-              </TableHead>
-              <TableBody>
-                {demandas.map((demanda) => (
-                  <TableRow key={demanda.id}>
-                    <TableCell>{demanda.titulo}</TableCell>
-                    <TableCell>{demanda.setor.nome}</TableCell>
-                    <TableCell>{demanda.responsavel?.nome ?? '—'}</TableCell>
-                    <TableCell>
-                      <Chip label={STATUS_DEMANDA_LABEL[demanda.status]} size="small" variant="outlined" />
-                    </TableCell>
-                  </TableRow>
-                ))}
-              </TableBody>
-            </Table>
-          </TableContainer>
-        )}
-      </Stack>
-
-      <Stack spacing={2}>
-        <Stack direction="row" sx={{ alignItems: 'center', justifyContent: 'space-between' }}>
           <Typography variant="h6">Atendimentos</Typography>
-          <Button size="small" startIcon={<PlusIcon />} onClick={() => setDialogAtendimentoAberto(true)}>
-            Novo atendimento
-          </Button>
+          <Stack direction="row" spacing={1}>
+            <Button
+              size="small"
+              startIcon={<WhatsappLogoIcon />}
+              component={RouterLink}
+              href={`${paths.dashboard.atendimento}?cliente=${clienteId}`}
+            >
+              Conversar no WhatsApp
+            </Button>
+            <Button size="small" startIcon={<PlusIcon />} onClick={() => setDialogAtendimentoAberto(true)}>
+              Registrar atendimento
+            </Button>
+          </Stack>
         </Stack>
         {atendimentos.length === 0 ? (
           <Typography color="text.secondary" variant="body2" sx={{ fontStyle: 'italic' }}>
@@ -320,6 +278,7 @@ export function ClienteDetalheView({ clienteId }: ClienteDetalheViewProps): Reac
               <TableHead>
                 <TableRow>
                   <TableCell>Motivo</TableCell>
+                  <TableCell>Setor</TableCell>
                   <TableCell>Responsável</TableCell>
                   <TableCell>Aberto em</TableCell>
                   <TableCell>Status</TableCell>
@@ -328,72 +287,24 @@ export function ClienteDetalheView({ clienteId }: ClienteDetalheViewProps): Reac
               <TableBody>
                 {atendimentos.map((atendimento) => (
                   <TableRow key={atendimento.id}>
-                    <TableCell>{atendimento.motivo}</TableCell>
+                    <TableCell>
+                      {atendimento.conversaId ? (
+                        <Link
+                          component={RouterLink}
+                          href={`${paths.dashboard.atendimento}?conversa=${atendimento.conversaId}`}
+                          underline="hover"
+                        >
+                          {atendimento.motivoCategoria?.nome ?? atendimento.motivo ?? 'Conversa no WhatsApp'}
+                        </Link>
+                      ) : (
+                        (atendimento.motivoCategoria?.nome ?? atendimento.motivo ?? '—')
+                      )}
+                    </TableCell>
+                    <TableCell>{atendimento.setor?.nome ?? '—'}</TableCell>
                     <TableCell>{atendimento.responsavel?.nome ?? '—'}</TableCell>
                     <TableCell>{dayjs(atendimento.abertoEm).format('DD/MM/YYYY HH:mm')}</TableCell>
                     <TableCell>
                       <Chip label={STATUS_ATENDIMENTO_LABEL[atendimento.status]} size="small" variant="outlined" />
-                    </TableCell>
-                  </TableRow>
-                ))}
-              </TableBody>
-            </Table>
-          </TableContainer>
-        )}
-      </Stack>
-
-      <Stack spacing={2}>
-        <Stack direction="row" sx={{ alignItems: 'center', justifyContent: 'space-between' }}>
-          <Typography variant="h6">Financeiro</Typography>
-          <Button size="small" startIcon={<PlusIcon />} onClick={() => setDialogLancamentoAberto(true)}>
-            Novo lançamento
-          </Button>
-        </Stack>
-        <Stack direction="row" spacing={2} sx={{ flexWrap: 'wrap' }}>
-          <Typography variant="body2">
-            A pagar em aberto: <strong>{formatoMoeda.format(resumoFinanceiro.aPagar)}</strong>
-          </Typography>
-          <Typography variant="body2">
-            A receber em aberto: <strong>{formatoMoeda.format(resumoFinanceiro.aReceber)}</strong>
-          </Typography>
-        </Stack>
-        {lancamentos.length === 0 ? (
-          <Typography color="text.secondary" variant="body2" sx={{ fontStyle: 'italic' }}>
-            Nenhum lançamento financeiro para este cliente.
-          </Typography>
-        ) : (
-          <TableContainer component={Paper} variant="outlined">
-            <Table size="small">
-              <TableHead>
-                <TableRow>
-                  <TableCell>Tipo</TableCell>
-                  <TableCell>Descrição</TableCell>
-                  <TableCell>Vencimento</TableCell>
-                  <TableCell align="right">Valor</TableCell>
-                  <TableCell>Status</TableCell>
-                </TableRow>
-              </TableHead>
-              <TableBody>
-                {lancamentos.map((lancamento) => (
-                  <TableRow key={lancamento.id}>
-                    <TableCell>
-                      <Chip
-                        label={lancamento.tipo === 'PAGAR' ? 'Pagar' : 'Receber'}
-                        color={lancamento.tipo === 'PAGAR' ? 'error' : 'success'}
-                        size="small"
-                        variant="outlined"
-                      />
-                    </TableCell>
-                    <TableCell>{lancamento.descricao}</TableCell>
-                    <TableCell>{dayjs(lancamento.vencimento).format('DD/MM/YYYY')}</TableCell>
-                    <TableCell align="right">{formatoMoeda.format(lancamento.valor)}</TableCell>
-                    <TableCell>
-                      <Chip
-                        label={lancamento.liquidadoEm ? 'Liquidado' : 'Pendente'}
-                        color={lancamento.liquidadoEm ? 'success' : 'default'}
-                        size="small"
-                        variant="outlined"
-                      />
                     </TableCell>
                   </TableRow>
                 ))}
@@ -408,7 +319,14 @@ export function ClienteDetalheView({ clienteId }: ClienteDetalheViewProps): Reac
         cliente={cliente}
         setores={setores}
         usuarios={usuarios}
-        onClose={() => setDialogClienteAberto(false)}
+        onClose={() => {
+          setDialogClienteAberto(false);
+          // Contatos e regime podem ter mudado no diálogo (e com o regime, as entregas).
+          api<Cliente>(`/clientes/${clienteId}`)
+            .then(setCliente)
+            .catch(() => null);
+          recarregarEntregas();
+        }}
         onSaved={(atualizado) => setCliente(atualizado)}
       />
 
@@ -424,35 +342,16 @@ export function ClienteDetalheView({ clienteId }: ClienteDetalheViewProps): Reac
         onSaved={(obrigacao) => setObrigacoes((atual) => [...atual, obrigacao])}
       />
 
-      <DemandaFormDialog
-        open={dialogDemandaAberto}
-        demanda={null}
-        clientes={clientesParaDialog}
-        setores={setores}
-        usuarios={usuarios}
-        clientePreSelecionado={cliente}
-        onClose={() => setDialogDemandaAberto(false)}
-        onSaved={(demanda) => setDemandas((atual) => [...atual, demanda])}
-      />
-
-      <AtendimentoFormDialog
+      <RegistrarAtendimentoDialog
         open={dialogAtendimentoAberto}
-        atendimento={null}
         clientes={clientesParaDialog}
         setores={setores}
         usuarios={usuarios}
-        clientePreSelecionado={cliente}
+        motivos={motivos}
+        clienteInicialId={cliente.id}
+        setorPadraoId={user?.setor?.id ?? null}
         onClose={() => setDialogAtendimentoAberto(false)}
-        onSaved={(atendimento) => setAtendimentos((atual) => [...atual, atendimento])}
-      />
-
-      <LancamentoFormDialog
-        open={dialogLancamentoAberto}
-        lancamento={null}
-        clientes={clientesParaDialog}
-        clientePreSelecionado={cliente}
-        onClose={() => setDialogLancamentoAberto(false)}
-        onSaved={(lancamento) => setLancamentos((atual) => [...atual, lancamento])}
+        onRegistrado={(conversaId) => router.push(`${paths.dashboard.atendimento}?conversa=${conversaId}`)}
       />
 
       <Snackbar open={Boolean(erro)} autoHideDuration={5000} onClose={() => setErro(null)}>

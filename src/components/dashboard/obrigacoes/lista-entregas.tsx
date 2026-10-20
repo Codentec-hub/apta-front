@@ -49,6 +49,7 @@ import { XCircleIcon } from '@phosphor-icons/react/dist/ssr/XCircle';
 import dayjs, { type Dayjs } from 'dayjs';
 
 import { api } from '@/lib/api';
+import { formatarCodigo } from '@/lib/empresa';
 import { usePaginacao } from '@/hooks/use-paginacao';
 import { useUser } from '@/hooks/use-user';
 import {
@@ -129,6 +130,12 @@ function motivoBloqueioMassa(selecionadas: Obrigacao[]): string | null {
 
 function formatarData(data: string | null): string {
   return data ? dayjs(data).format('DD/MM/YY') : '—';
+}
+
+const MOEDA = new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' });
+
+function formatarMoeda(valor: number): string {
+  return MOEDA.format(valor);
 }
 
 function finalCnpj(cnpj: string): string {
@@ -592,7 +599,7 @@ export function ListaEntregas({ dados, onErro }: ListaEntregasProps): React.JSX.
                         ) : null}
                       </Stack>
                       <Typography variant="caption" noWrap title={o.cliente.razaoSocial} sx={{ display: 'block' }}>
-                        {o.cliente.razaoSocial} [{o.cliente.codigo ? `${String(o.cliente.codigo).padStart(3, '0')} | ` : ''}
+                        {o.cliente.razaoSocial} [{o.cliente.codigo ? `${formatarCodigo(o.cliente.codigo)} | ` : ''}
                         {finalCnpj(o.cliente.cnpj)}]
                       </Typography>
                     </TableCell>
@@ -630,6 +637,11 @@ export function ListaEntregas({ dados, onErro }: ListaEntregasProps): React.JSX.
                       <Typography variant="caption" sx={{ fontWeight: 600, color: 'error.main' }}>
                         {formatarCompetencia(o.competencia, competenciaAnual(o.tipo))}
                       </Typography>
+                      {o.valorGuia == null ? null : (
+                        <Typography variant="caption" sx={{ display: 'block' }}>
+                          {formatarMoeda(o.valorGuia)}
+                        </Typography>
+                      )}
                     </TableCell>
                     <TableCell sx={{ maxWidth: 260 }}>
                       {o.concluidaEm ? (
@@ -695,7 +707,17 @@ export function ListaEntregas({ dados, onErro }: ListaEntregasProps): React.JSX.
                             </IconButton>
                           </Tooltip>
                           <Tooltip title="Entrega Rápida">
-                            <IconButton size="small" color="success" onClick={() => acao(o, '/concluir', {}, 'Entregue')}>
+                            <IconButton
+                              size="small"
+                              color="success"
+                              onClick={() =>
+                                // Fora do prazo legal e sem justificativa: abre a entrega
+                                // completa, que exige justificativa e plano de ação.
+                                dayjs().isAfter(dayjs(o.prazo)) && !o.atraso
+                                  ? abrir('concluir', o)
+                                  : acao(o, '/concluir', {}, 'Entregue')
+                              }
+                            >
                               <ThumbsUpIcon />
                             </IconButton>
                           </Tooltip>

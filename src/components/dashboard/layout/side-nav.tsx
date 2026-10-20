@@ -87,7 +87,7 @@ interface NavItemProps extends Omit<NavItemConfig, 'items'> {
   pathname: string;
 }
 
-function NavItem({ disabled, external, href, icon, matcher, pathname, title }: NavItemProps): React.JSX.Element {
+function NavItem({ disabled, external, href, icon, label, matcher, pathname, title }: NavItemProps): React.JSX.Element {
   const active = isNavItemActive({ disabled, external, href, matcher, pathname });
   const Icon = icon ? navIcons[icon] : null;
 
@@ -139,6 +139,26 @@ function NavItem({ disabled, external, href, icon, matcher, pathname, title }: N
             {title}
           </Typography>
         </Box>
+        {label ? (
+          <Box
+            component="span"
+            sx={{
+              flex: '0 0 auto',
+              fontSize: '0.625rem',
+              fontWeight: 600,
+              lineHeight: '18px',
+              px: 0.75,
+              borderRadius: '9px',
+              letterSpacing: '0.02em',
+              color: active ? 'inherit' : 'var(--mui-palette-warning-main)',
+              border: '1px solid',
+              borderColor: active ? 'currentColor' : 'rgba(var(--mui-palette-warning-mainChannel) / 0.5)',
+              opacity: active ? 0.85 : 1,
+            }}
+          >
+            {label}
+          </Box>
+        ) : null}
       </Box>
     </li>
   );

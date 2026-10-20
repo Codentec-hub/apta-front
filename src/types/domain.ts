@@ -149,6 +149,21 @@ export interface ConfiguracaoEnvio {
   emailConfigurado: boolean;
 }
 
+export interface ConfiguracaoGemini {
+  modelo: string;
+  apiKeyConfigurada: boolean;
+  apiKeyMascarada: string | null;
+  origem: 'banco' | 'ambiente' | 'nenhuma';
+}
+
+export interface ConfiguracaoEvolution {
+  url: string | null;
+  instancia: string | null;
+  apiKeyConfigurada: boolean;
+  apiKeyMascarada: string | null;
+  origem: 'banco' | 'ambiente' | 'nenhuma';
+}
+
 // Resumo que vem em cada linha da Lista de Entregas.
 export type ProtocoloResumo = Pick<
   ProtocoloEntrega,

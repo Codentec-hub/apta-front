@@ -11,7 +11,7 @@ export const navItems = [
   { key: 'folha', title: 'Folha de Pagamento', href: paths.dashboard.folha, icon: 'wallet', label: 'Em breve' },
   { key: 'financeiro', title: 'Financeiro', href: paths.dashboard.financeiro, icon: 'bank', label: 'Em breve' },
   { key: 'contabil', title: 'Contábil', href: paths.dashboard.contabil, icon: 'calculator', label: 'Em breve' },
-  { key: 'automacao', title: 'Agentes e IA', href: paths.dashboard.automacao, icon: 'robot' },
+  { key: 'automacao', title: 'Automação e IA', href: paths.dashboard.automacao, icon: 'robot', label: 'Em breve' },
 ] satisfies NavItemConfig[];
 
 export const settingsNavItems = [

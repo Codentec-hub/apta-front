@@ -19,6 +19,7 @@ import FormLabel from '@mui/material/FormLabel';
 import InputLabel from '@mui/material/InputLabel';
 import MenuItem from '@mui/material/MenuItem';
 import Select from '@mui/material/Select';
+import Snackbar from '@mui/material/Snackbar';
 import Stack from '@mui/material/Stack';
 import TextField from '@mui/material/TextField';
 import Tooltip from '@mui/material/Tooltip';
@@ -74,6 +75,7 @@ export interface ClienteFormDialogProps {
   usuarios: UsuarioResumo[];
   onClose: () => void;
   onSaved: (cliente: Cliente) => void;
+  onError?: (mensagem: string) => void;
 }
 
 // Resposta do POST/PUT: quantas obrigações do regime foram vinculadas
@@ -177,6 +179,7 @@ export function ClienteFormDialog({
   usuarios,
   onClose,
   onSaved,
+  onError,
 }: ClienteFormDialogProps): React.JSX.Element {
   const [form, setForm] = React.useState<FormState>(VAZIO);
   const [clienteAtual, setClienteAtual] = React.useState<Cliente | null>(cliente);
@@ -326,7 +329,9 @@ export function ClienteFormDialog({
       setClienteAtual(salvo);
       onSaved(salvo);
     } catch (error) {
-      setErro(error instanceof Error ? error.message : 'Erro ao salvar cliente');
+      const mensagem = error instanceof Error ? error.message : 'Erro ao salvar cliente';
+      setErro(mensagem);
+      onError?.(mensagem);
     } finally {
       setSalvando(false);
     }

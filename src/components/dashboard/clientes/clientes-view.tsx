@@ -38,6 +38,7 @@ export function ClientesView(): React.JSX.Element {
   const [usuarios, setUsuarios] = React.useState<UsuarioResumo[]>([]);
   const [carregando, setCarregando] = React.useState(true);
   const [erro, setErro] = React.useState<string | null>(null);
+  const [aviso, setAviso] = React.useState<string | null>(null);
   const [busca, setBusca] = React.useState('');
 
   const [dialogAberto, setDialogAberto] = React.useState(false);
@@ -93,12 +94,14 @@ export function ClientesView(): React.JSX.Element {
   }
 
   function aoSalvar(cliente: Cliente): void {
+    let existe = false;
     setClientes((atual) => {
-      const existe = atual.some((c) => c.id === cliente.id);
+      existe = atual.some((c) => c.id === cliente.id);
       const proximo = existe ? atual.map((c) => (c.id === cliente.id ? cliente : c)) : [...atual, cliente];
       return proximo.sort((a, b) => a.razaoSocial.localeCompare(b.razaoSocial));
     });
     setClienteEmEdicao(cliente);
+    setAviso(existe ? 'Cliente atualizado com sucesso.' : 'Cliente cadastrado com sucesso.');
   }
 
   async function alternarAtivo(cliente: Cliente): Promise<void> {
@@ -233,11 +236,18 @@ export function ClientesView(): React.JSX.Element {
         usuarios={usuarios}
         onClose={() => setDialogAberto(false)}
         onSaved={aoSalvar}
+        onError={setErro}
       />
 
       <Snackbar open={Boolean(erro)} autoHideDuration={5000} onClose={() => setErro(null)}>
         <Alert onClose={() => setErro(null)} severity="error" sx={{ width: '100%' }}>
           {erro}
+        </Alert>
+      </Snackbar>
+
+      <Snackbar open={Boolean(aviso)} autoHideDuration={4000} onClose={() => setAviso(null)}>
+        <Alert onClose={() => setAviso(null)} severity="success" sx={{ width: '100%' }}>
+          {aviso}
         </Alert>
       </Snackbar>
     </Stack>

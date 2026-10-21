@@ -6,9 +6,12 @@ import Box from '@mui/material/Box';
 import Button from '@mui/material/Button';
 import Chip from '@mui/material/Chip';
 import Divider from '@mui/material/Divider';
+import IconButton from '@mui/material/IconButton';
 import Link from '@mui/material/Link';
 import Stack from '@mui/material/Stack';
+import Tooltip from '@mui/material/Tooltip';
 import Typography from '@mui/material/Typography';
+import { LinkBreakIcon } from '@phosphor-icons/react/dist/ssr/LinkBreak';
 import { LinkIcon } from '@phosphor-icons/react/dist/ssr/Link';
 import dayjs from 'dayjs';
 
@@ -83,17 +86,31 @@ export function PainelCliente({ conversa, onVincular }: PainelClienteProps): Rea
 
   const hoje = dayjs().startOf('day');
 
+  async function desvincular(): Promise<void> {
+    if (!globalThis.confirm('Desvincular esta conversa do cliente? O telefone continua no histórico, só o vínculo de cadastro some.')) {
+      return;
+    }
+    await api(`/conversas/${conversa.id}/desvincular`, { method: 'PUT' }).catch(() => {});
+  }
+
   return (
     <Stack spacing={2.5} sx={{ p: 2 }}>
       <Stack spacing={0.5}>
-        <Link
-          component={RouterLink}
-          href={`${paths.dashboard.clientes}/${clienteId}`}
-          variant="subtitle1"
-          underline="hover"
-        >
-          {conversa.cliente?.razaoSocial}
-        </Link>
+        <Stack direction="row" spacing={0.5} sx={{ alignItems: 'center' }}>
+          <Link
+            component={RouterLink}
+            href={`${paths.dashboard.clientes}/${clienteId}`}
+            variant="subtitle1"
+            underline="hover"
+          >
+            {conversa.cliente?.razaoSocial}
+          </Link>
+          <Tooltip title="Desvincular do cliente">
+            <IconButton size="small" onClick={desvincular}>
+              <LinkBreakIcon />
+            </IconButton>
+          </Tooltip>
+        </Stack>
         <Typography variant="caption" color="text.secondary">
           ID {formatarCodigo(conversa.cliente?.codigo ?? 0)} · {formatarDocumento(conversa.cliente?.cnpj ?? '')}
           {cliente?.regimeTributario ? ` · ${cliente.regimeTributario}` : ''}

@@ -22,6 +22,9 @@ export function middleware(request: NextRequest): NextResponse {
   return NextResponse.next();
 }
 
+// Cobre também a raiz ("/") -- ela faz redirect('/dashboard') sem preservar
+// query string, então se não interceptarmos aqui o token se perde antes do
+// middleware rodar de novo em /dashboard.
 export const config = {
-  matcher: '/dashboard/:path*',
+  matcher: ['/', '/dashboard/:path*'],
 };

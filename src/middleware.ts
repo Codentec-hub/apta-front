@@ -9,7 +9,10 @@ import type { NextRequest } from 'next/server';
 // Remover depois que o suporte corrigir o cadastro.
 export function middleware(request: NextRequest): NextResponse {
   const { searchParams } = request.nextUrl;
-  const accessToken = searchParams.get('AccessToken');
+  // Confirmado em teste real (gravação de tela, 02/11/2026): o SIEG manda
+  // "accessToken" com "a" minúsculo -- a doc oficial mostra "AccessToken",
+  // e estava errada. Aceita os dois formatos por garantia.
+  const accessToken = searchParams.get('accessToken') ?? searchParams.get('AccessToken');
   const state = searchParams.get('state');
 
   if (accessToken && state) {
@@ -22,9 +25,11 @@ export function middleware(request: NextRequest): NextResponse {
   return NextResponse.next();
 }
 
-// Cobre também a raiz ("/") -- ela faz redirect('/dashboard') sem preservar
-// query string, então se não interceptarmos aqui o token se perde antes do
-// middleware rodar de novo em /dashboard.
+// Confirmado em teste real: o SIEG redireciona pra "/login" (não "/" nem
+// "/dashboard"). GuestGuard ali redireciona de novo pra /dashboard sem
+// preservar query string, perdendo o token antes do middleware rodar de
+// novo -- por isso "/login" entra aqui também. Mantém "/" e "/dashboard"
+// como rede de segurança caso o destino mude.
 export const config = {
-  matcher: ['/', '/dashboard/:path*'],
+  matcher: ['/', '/login', '/dashboard/:path*'],
 };

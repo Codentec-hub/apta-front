@@ -17,7 +17,10 @@ export default function Layout({ children }: LayoutProps): React.JSX.Element {
       <GlobalStyles
         styles={{
           body: {
-            '--MainNav-height': '56px',
+            // MainNav é `minHeight: '64px'` + borda de 1px (main-nav.tsx) --
+            // 56px aqui estava errado e nada mais além da conta de altura
+            // do Atendimento usava essa variável, então o erro nunca doeu.
+            '--MainNav-height': '65px',
             '--MainNav-zIndex': 1000,
             '--SideNav-width': '280px',
             '--SideNav-zIndex': 1100,

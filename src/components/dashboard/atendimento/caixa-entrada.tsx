@@ -299,11 +299,20 @@ export function CaixaEntrada(): React.JSX.Element {
   };
 
   return (
-    <Stack spacing={2}>
+    // Altura presa à viewport (só o MainNav sobra -- o padding vertical do
+    // Container do layout do dashboard, 64px em cima/embaixo, é anulado com
+    // margem negativa logo abaixo, só nesta tela, pra não desperdiçar esse
+    // espaço num painel de uso denso como este). Sem a altura em flex, o
+    // Paper abaixo ficava mais alto que o espaço real sobrando e a PÁGINA
+    // INTEIRA passava a rolar, em vez de só o painel lateral.
+    <Stack
+      spacing={2}
+      sx={{ height: 'calc(100vh - var(--MainNav-height, 65px))', minHeight: 0, mt: '-64px', mb: '-64px' }}
+    >
       <Stack
         direction={{ xs: 'column', md: 'row' }}
         spacing={2}
-        sx={{ justifyContent: 'space-between', alignItems: { md: 'center' } }}
+        sx={{ justifyContent: 'space-between', alignItems: { md: 'center' }, flexShrink: 0 }}
       >
         <Stack spacing={0.5}>
           <Typography variant="h4">Atendimento</Typography>
@@ -360,8 +369,8 @@ export function CaixaEntrada(): React.JSX.Element {
         sx={{
           display: 'grid',
           gridTemplateColumns: colunas,
-          height: { xs: 'calc(100vh - 220px)', md: 'calc(100vh - 230px)' },
-          minHeight: 560,
+          flex: '1 1 auto',
+          minHeight: 400,
           overflow: 'hidden',
         }}
       >

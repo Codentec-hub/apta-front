@@ -19,7 +19,7 @@ export default function Page(): React.JSX.Element {
         'Aviso de certificados digitais perto de vencer',
         'Guias enviadas ao cliente pelo WhatsApp assim que forem obtidas',
       ]}
-      dependencia="Depende da integração com o SIEG e o DominioWeb."
+      dependencia="Conexão com o SIEG já autorizada. Falta a integração com o DominioWeb e a construção da sincronização em si."
     />
   );
 }

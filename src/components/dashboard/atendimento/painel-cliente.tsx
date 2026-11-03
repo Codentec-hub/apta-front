@@ -5,6 +5,7 @@ import RouterLink from 'next/link';
 import Box from '@mui/material/Box';
 import Button from '@mui/material/Button';
 import Chip from '@mui/material/Chip';
+import CircularProgress from '@mui/material/CircularProgress';
 import Divider from '@mui/material/Divider';
 import IconButton from '@mui/material/IconButton';
 import Link from '@mui/material/Link';
@@ -13,6 +14,7 @@ import Tooltip from '@mui/material/Tooltip';
 import Typography from '@mui/material/Typography';
 import { LinkBreakIcon } from '@phosphor-icons/react/dist/ssr/LinkBreak';
 import { LinkIcon } from '@phosphor-icons/react/dist/ssr/Link';
+import { MagnifyingGlassIcon } from '@phosphor-icons/react/dist/ssr/MagnifyingGlass';
 import dayjs from 'dayjs';
 
 import type { Cliente, ConversaDetalhe, Obrigacao } from '@/types/domain';
@@ -46,6 +48,31 @@ export function PainelCliente({ conversa, onVincular }: PainelClienteProps): Rea
   const [cliente, setCliente] = React.useState<Cliente | null>(null);
   const [abertas, setAbertas] = React.useState<Obrigacao[]>([]);
   const [naoLidas, setNaoLidas] = React.useState<Obrigacao[]>([]);
+
+  // Protótipo visual (Fase D ainda não tem backend) -- simula a busca pra
+  // mostrar a experiência do atendente; nenhum dado aqui vem de integração
+  // real, por isso o resultado é sempre o mesmo exemplo fixo.
+  const [buscandoBoleto, setBuscandoBoleto] = React.useState(false);
+  const [boletoExemplo, setBoletoExemplo] = React.useState<{
+    numero: string;
+    valor: string;
+    vencimento: string;
+    status: string;
+  } | null>(null);
+
+  function buscarBoletoExemplo(): void {
+    setBuscandoBoleto(true);
+    setBoletoExemplo(null);
+    globalThis.setTimeout(() => {
+      setBoletoExemplo({
+        numero: '000123/2026',
+        valor: 'R$ 1.240,00',
+        vencimento: dayjs().add(5, 'day').format('DD/MM/YYYY'),
+        status: 'Em aberto',
+      });
+      setBuscandoBoleto(false);
+    }, 900);
+  }
 
   React.useEffect(() => {
     setCliente(null);
@@ -183,6 +210,32 @@ export function PainelCliente({ conversa, onVincular }: PainelClienteProps): Rea
             </Typography>
           ))
         )}
+      </Secao>
+
+      <Secao titulo="Boletos">
+        <Stack spacing={1} sx={{ alignItems: 'flex-start' }}>
+          <Chip label="Protótipo visual" size="small" color="info" variant="outlined" />
+          <Button
+            size="small"
+            variant="outlined"
+            startIcon={buscandoBoleto ? <CircularProgress size={14} /> : <MagnifyingGlassIcon />}
+            onClick={buscarBoletoExemplo}
+            disabled={buscandoBoleto}
+          >
+            Buscar boletos (SIEG)
+          </Button>
+          {boletoExemplo ? (
+            <Stack spacing={0.25} sx={{ p: 1, borderRadius: 1, border: '1px dashed', borderColor: 'divider', width: '100%' }}>
+              <Typography variant="body2">Boleto {boletoExemplo.numero}</Typography>
+              <Typography variant="body2" color="text.secondary">
+                {boletoExemplo.valor} · vence {boletoExemplo.vencimento} · {boletoExemplo.status}
+              </Typography>
+              <Typography variant="caption" color="text.secondary" sx={{ fontStyle: 'italic' }}>
+                Exemplo — busca real via integração entra na Fase D
+              </Typography>
+            </Stack>
+          ) : null}
+        </Stack>
       </Secao>
 
       <Box>

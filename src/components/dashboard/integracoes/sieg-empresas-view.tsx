@@ -34,6 +34,9 @@ import { paths } from "@/paths";
 import { api } from "@/lib/api";
 import { formatarDocumento } from "@/lib/empresa";
 import { usePaginacao } from "@/hooks/use-paginacao";
+import { useUser } from "@/hooks/use-user";
+
+import { SiegImportarClientesDialog } from "./sieg-importar-clientes-dialog";
 
 interface EmpresaSieg {
 	id: string;
@@ -159,6 +162,9 @@ export function SiegEmpresasView(): React.JSX.Element {
 	const [erroTela, setErroTela] = React.useState<string | null>(null);
 	const [busca, setBusca] = React.useState("");
 	const [filtro, setFiltro] = React.useState<Filtro>("ativas");
+	const [importando, setImportando] = React.useState(false);
+	const { user } = useUser();
+	const ehAdmin = user?.perfil === "ADMIN";
 
 	const carregar = React.useCallback(async (atualizar = false) => {
 		try {
@@ -262,6 +268,11 @@ export function SiegEmpresasView(): React.JSX.Element {
 					</Typography>
 				</Stack>
 				<Stack direction="row" spacing={1}>
+					{ehAdmin ? (
+						<Button variant="outlined" disabled={dados?.situacao !== "concluida"} onClick={() => setImportando(true)}>
+							Usar como clientes da Apta
+						</Button>
+					) : null}
 					<Button
 						variant="outlined"
 						startIcon={<DownloadSimpleIcon />}
@@ -480,6 +491,11 @@ export function SiegEmpresasView(): React.JSX.Element {
 					labelRowsPerPage="Linhas por página"
 				/>
 			</Paper>
+			<SiegImportarClientesDialog
+				aberto={importando}
+				onFechar={() => setImportando(false)}
+				onConcluido={() => void carregar()}
+			/>
 		</Stack>
 	);
 }

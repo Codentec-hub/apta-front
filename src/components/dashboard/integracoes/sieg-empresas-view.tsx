@@ -47,6 +47,7 @@ interface EmpresaSieg {
 	consultaNoturna: boolean;
 	ativo: boolean;
 	deletado: boolean;
+	statusSieg?: string | null;
 	cliente: { id: string; nome: string; ativo: boolean } | null;
 }
 
@@ -157,7 +158,8 @@ function baixarCsv(empresas: EmpresaSieg[]): void {
 	URL.revokeObjectURL(url);
 }
 
-export function SiegEmpresasView(): React.JSX.Element {
+/** `embutido`: dentro da página SIEG (com abas) -- sem o link de voltar e o título. */
+export function SiegEmpresasView({ embutido = false }: { embutido?: boolean } = {}): React.JSX.Element {
 	const [dados, setDados] = React.useState<RespostaEmpresas | null>(null);
 	const [erroTela, setErroTela] = React.useState<string | null>(null);
 	const [busca, setBusca] = React.useState("");
@@ -246,21 +248,25 @@ export function SiegEmpresasView(): React.JSX.Element {
 	return (
 		<Stack spacing={3}>
 			<Stack
-				direction={{ xs: "column", sm: "row" }}
+				direction={{ xs: "column", lg: "row" }}
 				spacing={2}
-				sx={{ alignItems: { sm: "center" }, justifyContent: "space-between" }}
+				sx={{ alignItems: { lg: "center" }, justifyContent: "space-between" }}
 			>
 				<Stack spacing={0.5}>
-					<Link
-						component={RouterLink}
-						href={paths.dashboard.integracoes}
-						underline="hover"
-						variant="body2"
-						sx={{ display: "inline-flex", alignItems: "center", gap: 0.5 }}
-					>
-						<ArrowLeftIcon size={14} /> Integrações
-					</Link>
-					<Typography variant="h4">Empresas na SIEG</Typography>
+					{embutido ? null : (
+						<>
+							<Link
+								component={RouterLink}
+								href={paths.dashboard.integracoes}
+								underline="hover"
+								variant="body2"
+								sx={{ display: "inline-flex", alignItems: "center", gap: 0.5 }}
+							>
+								<ArrowLeftIcon size={14} /> Integrações
+							</Link>
+							<Typography variant="h4">Empresas na SIEG</Typography>
+						</>
+					)}
 					<Typography color="text.secondary" variant="body2">
 						Empresas com certificado digital cadastrado na conta SIEG da Apta (API “Listar Certificados e Empresas”),
 						lidas agora e cruzadas com os clientes daqui pelo CNPJ/CPF. Empresas sem certificado na SIEG não aparecem
@@ -333,8 +339,8 @@ export function SiegEmpresasView(): React.JSX.Element {
 			{dados?.situacao === "concluida" ? (
 				<Alert severity="success">
 					Integração funcionando: {contagem.ativas} empresas ativas lidas da SIEG
-					{contagem.inativas > 0 ? ` (mais ${contagem.inativas} inativas/excluídas)` : ""} às{" "}
-					{dayjs(dados.concluidaEm).format("HH:mm [de] DD/MM/YYYY")}.
+					{contagem.inativas > 0 ? ` (mais ${contagem.inativas} inativas/excluídas)` : ""}
+					{dados.concluidaEm ? `, atualizadas em ${dayjs(dados.concluidaEm).format("DD/MM/YYYY [às] HH:mm")}` : ""}.
 				</Alert>
 			) : null}
 
@@ -410,7 +416,9 @@ export function SiegEmpresasView(): React.JSX.Element {
 								<TableCell>UF</TableCell>
 								<TableCell>Certificado</TableCell>
 								<TableCell>Consulta noturna</TableCell>
+								<TableCell>Status na SIEG</TableCell>
 								<TableCell>Cliente na Apta</TableCell>
+								<TableCell />
 							</TableRow>
 						</TableHead>
 						<TableBody>
@@ -445,6 +453,18 @@ export function SiegEmpresasView(): React.JSX.Element {
 										</TableCell>
 										<TableCell>{e.consultaNoturna ? "Ligada" : "Desligada"}</TableCell>
 										<TableCell>
+											{e.statusSieg ? (
+												<Chip
+													size="small"
+													variant="outlined"
+													color={/ativ/i.test(e.statusSieg) ? "success" : "warning"}
+													label={e.statusSieg}
+												/>
+											) : (
+												"—"
+											)}
+										</TableCell>
+										<TableCell>
 											{e.cliente ? (
 												<Link
 													component={RouterLink}
@@ -459,12 +479,22 @@ export function SiegEmpresasView(): React.JSX.Element {
 												</Typography>
 											)}
 										</TableCell>
+										<TableCell align="right">
+											<Link
+												component={RouterLink}
+												href={`${paths.dashboard.sieg}?aba=notas&documento=${e.documento}`}
+												variant="body2"
+												sx={{ whiteSpace: "nowrap" }}
+											>
+												Ver notas
+											</Link>
+										</TableCell>
 									</TableRow>
 								);
 							})}
 							{filtradas.length === 0 ? (
 								<TableRow>
-									<TableCell colSpan={6}>
+									<TableCell colSpan={8}>
 										<Box sx={{ py: 4, textAlign: "center" }}>
 											<Typography color="text.secondary" variant="body2">
 												{emAndamento

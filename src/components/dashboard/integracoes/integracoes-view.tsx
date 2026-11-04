@@ -121,8 +121,8 @@ export function IntegracoesView(): React.JSX.Element {
 
 						{status?.clientIdConfigurado ? (
 							<Box>
-								<Button component={RouterLink} href={paths.dashboard.integracoesSieg} variant="outlined" size="small">
-									Ver empresas na SIEG
+								<Button component={RouterLink} href={paths.dashboard.sieg} variant="outlined" size="small">
+									Abrir área da SIEG
 								</Button>
 							</Box>
 						) : null}

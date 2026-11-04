@@ -8,6 +8,7 @@ export const navItems = [
   { key: 'demandas', title: 'Demandas', href: paths.dashboard.demandas, icon: 'kanban', label: 'Em breve' },
   { key: 'atendimento', title: 'Atendimento', href: paths.dashboard.atendimento, icon: 'headset' },
   { key: 'fiscal', title: 'Fiscal', href: paths.dashboard.fiscal, icon: 'receipt', label: 'Em breve' },
+  { key: 'sieg', title: 'SIEG · Notas fiscais', href: paths.dashboard.sieg, icon: 'files' },
   { key: 'folha', title: 'Folha de Pagamento', href: paths.dashboard.folha, icon: 'wallet', label: 'Em breve' },
   { key: 'financeiro', title: 'Financeiro', href: paths.dashboard.financeiro, icon: 'bank', label: 'Em breve' },
   { key: 'contabil', title: 'Contábil', href: paths.dashboard.contabil, icon: 'calculator', label: 'Em breve' },

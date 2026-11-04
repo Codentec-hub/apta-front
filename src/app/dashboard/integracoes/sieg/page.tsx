@@ -1,11 +1,8 @@
-import * as React from 'react';
-import type { Metadata } from 'next';
+import { redirect } from "next/navigation";
 
-import { config } from '@/config';
-import { SiegEmpresasView } from '@/components/dashboard/integracoes/sieg-empresas-view';
+import { paths } from "@/paths";
 
-export const metadata = { title: `Empresas na SIEG | ${config.site.name}` } satisfies Metadata;
-
-export default function Page(): React.JSX.Element {
-  return <SiegEmpresasView />;
+// A lista de empresas virou a primeira aba da área SIEG.
+export default function Page(): never {
+	redirect(paths.dashboard.sieg);
 }

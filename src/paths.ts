@@ -14,6 +14,7 @@ export const paths = {
     automacao: '/dashboard/automacao',
     integracoes: '/dashboard/integracoes',
     integracoesSieg: '/dashboard/integracoes/sieg',
+    sieg: '/dashboard/sieg',
     usuarios: '/dashboard/usuarios',
     setores: '/dashboard/setores',
     feriados: '/dashboard/feriados',

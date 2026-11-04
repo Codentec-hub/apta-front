@@ -35,6 +35,8 @@ export function DadosFiscais({ cliente }: { cliente: Cliente }): React.JSX.Eleme
   const faltando = [
     cliente.cnaePrincipal ? null : 'CNAE',
     atividades.length > 0 ? null : 'atividade',
+    cliente.inscricaoMunicipal ? null : 'inscrição municipal',
+    cliente.atividades?.includes('comercio') && !cliente.inscricaoEstadual ? 'inscrição estadual' : null,
     responsavelLegal ? null : 'responsável legal',
   ].filter(Boolean);
 
@@ -48,20 +50,32 @@ export function DadosFiscais({ cliente }: { cliente: Cliente }): React.JSX.Eleme
         ) : null}
         <Grid container spacing={2}>
           <Grid size={{ xs: 12, md: 6 }}>
-            <Campo rotulo="CNAE principal">
-              {cliente.cnaePrincipal ? `${cliente.cnaePrincipal} · ${cliente.cnaeDescricao ?? ''}` : '—'}
-              {cliente.cnaesSecundarios?.length ? (
-                <Tooltip title={cliente.cnaesSecundarios.map((c) => `${c.codigo} ${c.descricao}`).join('\n')}>
-                  <Chip
-                    size="small"
-                    variant="outlined"
-                    label={`+${cliente.cnaesSecundarios.length} secundários`}
-                    sx={{ ml: 1 }}
-                  />
-                </Tooltip>
-              ) : null}
-            </Campo>
+            <Campo rotulo="CNAE principal">{cliente.cnaePrincipal ? `${cliente.cnaePrincipal} · ${cliente.cnaeDescricao ?? ''}` : '—'}</Campo>
           </Grid>
+          {cliente.cnaesSecundarios?.length ? (
+            <Grid size={12}>
+              <Campo rotulo={`CNAEs secundários (${cliente.cnaesSecundarios.length})`}>
+                <Stack direction="row" sx={{ flexWrap: 'wrap', gap: 0.75, mt: 0.5 }}>
+                  {cliente.cnaesSecundarios.map((c) => (
+                    <Tooltip key={c.codigo} title={c.descricao}>
+                      <Chip size="small" variant="outlined" label={`${c.codigo} · ${c.descricao}`} />
+                    </Tooltip>
+                  ))}
+                </Stack>
+              </Campo>
+            </Grid>
+          ) : null}
+          {cliente.servicosPrestados?.length ? (
+            <Grid size={12}>
+              <Campo rotulo={`Opções de serviços (${cliente.servicosPrestados.length})`}>
+                <Stack direction="row" sx={{ flexWrap: 'wrap', gap: 0.75, mt: 0.5 }}>
+                  {cliente.servicosPrestados.map((s) => (
+                    <Chip key={s.codigo} size="small" variant="outlined" label={`${s.codigo}. ${s.descricao}`} />
+                  ))}
+                </Stack>
+              </Campo>
+            </Grid>
+          ) : null}
           <Grid size={{ xs: 6, md: 3 }}>
             <Campo rotulo="Atividade">{atividades.join(', ') || '—'}</Campo>
           </Grid>

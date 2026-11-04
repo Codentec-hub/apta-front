@@ -2,6 +2,7 @@
 
 import * as React from 'react';
 import Alert from '@mui/material/Alert';
+import Autocomplete from '@mui/material/Autocomplete';
 import Button from '@mui/material/Button';
 import Checkbox from '@mui/material/Checkbox';
 import Chip from '@mui/material/Chip';
@@ -58,6 +59,82 @@ export const ATIVIDADES: { valor: AtividadeEmpresa; titulo: string }[] = [
   { valor: 'servicos', titulo: 'Serviços' },
   { valor: 'comercio', titulo: 'Comércio' },
   { valor: 'industria', titulo: 'Indústria' },
+  { valor: 'particular', titulo: 'Particular' },
+];
+
+// Lista de Serviços anexa à LC 116/2003 (os 40 itens de nível 1, base
+// nacional do ISS) -- opções exibidas quando a atividade "Serviços" é
+// marcada. Fonte: planalto.gov.br/ccivil_03/leis/lcp/lcp116.htm.
+export const SERVICOS_LC116: { codigo: string; descricao: string }[] = [
+  { codigo: '1', descricao: 'Serviços de informática e congêneres' },
+  { codigo: '2', descricao: 'Serviços de pesquisas e desenvolvimento de qualquer natureza' },
+  { codigo: '3', descricao: 'Serviços prestados mediante locação, cessão de direito de uso e congêneres' },
+  { codigo: '4', descricao: 'Serviços de saúde, assistência médica e congêneres' },
+  { codigo: '5', descricao: 'Serviços de medicina e assistência veterinária e congêneres' },
+  { codigo: '6', descricao: 'Serviços de cuidados pessoais, estética, atividades físicas e congêneres' },
+  {
+    codigo: '7',
+    descricao:
+      'Serviços relativos a engenharia, arquitetura, geologia, urbanismo, construção civil, manutenção, limpeza, meio ambiente, saneamento e congêneres',
+  },
+  {
+    codigo: '8',
+    descricao:
+      'Serviços de educação, ensino, orientação pedagógica e educacional, instrução, treinamento e avaliação pessoal de qualquer grau ou natureza',
+  },
+  { codigo: '9', descricao: 'Serviços relativos a hospedagem, turismo, viagens e congêneres' },
+  { codigo: '10', descricao: 'Serviços de intermediação e congêneres' },
+  { codigo: '11', descricao: 'Serviços de guarda, estacionamento, armazenamento, vigilância e congêneres' },
+  { codigo: '12', descricao: 'Serviços de diversões, lazer, entretenimento e congêneres' },
+  { codigo: '13', descricao: 'Serviços relativos a fonografia, fotografia, cinematografia e reprografia' },
+  { codigo: '14', descricao: 'Serviços relativos a bens de terceiros' },
+  {
+    codigo: '15',
+    descricao:
+      'Serviços relacionados ao setor bancário ou financeiro, inclusive aqueles prestados por instituições financeiras autorizadas a funcionar pela União',
+  },
+  { codigo: '16', descricao: 'Serviços de transporte de natureza municipal' },
+  { codigo: '17', descricao: 'Serviços de apoio técnico, administrativo, jurídico, contábil, comercial e congêneres' },
+  {
+    codigo: '18',
+    descricao:
+      'Serviços de regulação de sinistros vinculados a contratos de seguros; inspeção e avaliação de riscos; prevenção e gerência de riscos seguráveis',
+  },
+  {
+    codigo: '19',
+    descricao: 'Serviços de distribuição e venda de bilhetes e demais produtos de loteria, bingos, sorteios, apostas e congêneres',
+  },
+  {
+    codigo: '20',
+    descricao: 'Serviços portuários, aeroportuários, ferroportuários, de terminais rodoviários, ferroviários e metroviários',
+  },
+  { codigo: '21', descricao: 'Serviços de registros públicos, cartorários e notariais' },
+  { codigo: '22', descricao: 'Serviços de exploração de rodovia' },
+  { codigo: '23', descricao: 'Serviços de programação e comunicação visual, desenho industrial e congêneres' },
+  { codigo: '24', descricao: 'Serviços de chaveiros, confecção de carimbos, placas, sinalização visual, banners, adesivos e congêneres' },
+  { codigo: '25', descricao: 'Serviços funerários' },
+  {
+    codigo: '26',
+    descricao:
+      'Serviços de coleta, remessa ou entrega de correspondências, documentos, objetos, bens ou valores, inclusive courrier e congêneres',
+  },
+  { codigo: '27', descricao: 'Serviços de assistência social' },
+  { codigo: '28', descricao: 'Serviços de avaliação de bens e serviços de qualquer natureza' },
+  { codigo: '29', descricao: 'Serviços de biblioteconomia' },
+  { codigo: '30', descricao: 'Serviços de biologia, biotecnologia e química' },
+  {
+    codigo: '31',
+    descricao: 'Serviços técnicos em edificações, eletrônica, eletrotécnica, mecânica, telecomunicações e congêneres',
+  },
+  { codigo: '32', descricao: 'Serviços de desenhos técnicos' },
+  { codigo: '33', descricao: 'Serviços de desembaraço aduaneiro, comissários, despachantes e congêneres' },
+  { codigo: '34', descricao: 'Serviços de investigações particulares, detetives e congêneres' },
+  { codigo: '35', descricao: 'Serviços de reportagem, assessoria de imprensa, jornalismo e relações públicas' },
+  { codigo: '36', descricao: 'Serviços de meteorologia' },
+  { codigo: '37', descricao: 'Serviços de artistas, atletas, modelos e manequins' },
+  { codigo: '38', descricao: 'Serviços de museologia' },
+  { codigo: '39', descricao: 'Serviços de ourivesaria e lapidação' },
+  { codigo: '40', descricao: 'Serviços relativos a obras de arte sob encomenda' },
 ];
 
 export const NOTAS: { valor: NotaEmitida; titulo: string; ajuda: string }[] = [
@@ -97,6 +174,7 @@ interface FormState {
   cnaeDescricao: string;
   cnaesSecundarios: { codigo: string; descricao: string }[];
   atividades: AtividadeEmpresa[];
+  servicosPrestados: { codigo: string; descricao: string }[];
   inscricaoEstadual: string;
   inscricaoMunicipal: string;
   notasEmitidas: NotaEmitida[];
@@ -120,6 +198,7 @@ const VAZIO: FormState = {
   cnaeDescricao: '',
   cnaesSecundarios: [],
   atividades: [],
+  servicosPrestados: [],
   inscricaoEstadual: '',
   inscricaoMunicipal: '',
   notasEmitidas: [],
@@ -144,6 +223,7 @@ function doCliente(cliente: Cliente): FormState {
     cnaeDescricao: cliente.cnaeDescricao ?? '',
     cnaesSecundarios: cliente.cnaesSecundarios ?? [],
     atividades: cliente.atividades ?? [],
+    servicosPrestados: cliente.servicosPrestados ?? [],
     inscricaoEstadual: cliente.inscricaoEstadual ?? '',
     inscricaoMunicipal: cliente.inscricaoMunicipal ?? '',
     notasEmitidas: cliente.notasEmitidas ?? [],
@@ -282,6 +362,18 @@ export function ClienteFormDialog({
       setErro(problemaDocumento);
       return;
     }
+    if (form.atividades.length === 0) {
+      setErro('Escolha ao menos uma atividade');
+      return;
+    }
+    if (!form.inscricaoMunicipal.trim()) {
+      setErro('Inscrição municipal é obrigatória para todas as atividades');
+      return;
+    }
+    if (form.atividades.includes('comercio') && !form.inscricaoEstadual.trim()) {
+      setErro('Inscrição estadual é obrigatória para comércio');
+      return;
+    }
 
     setSalvando(true);
     setErro(null);
@@ -302,6 +394,7 @@ export function ClienteFormDialog({
       cnaeDescricao: texto(form.cnaeDescricao),
       cnaesSecundarios: form.cnaesSecundarios.length > 0 ? form.cnaesSecundarios : null,
       atividades: form.atividades,
+      servicosPrestados: form.atividades.includes('servicos') && form.servicosPrestados.length > 0 ? form.servicosPrestados : null,
       inscricaoEstadual: texto(form.inscricaoEstadual),
       inscricaoMunicipal: texto(form.inscricaoMunicipal),
       notasEmitidas: form.notasEmitidas,
@@ -508,7 +601,7 @@ export function ClienteFormDialog({
                 </Stack>
               ) : null}
               <Stack direction={{ xs: 'column', md: 'row' }} spacing={3}>
-                <FormControl component="fieldset">
+                <FormControl component="fieldset" required error={form.atividades.length === 0}>
                   <FormLabel component="legend" sx={{ typography: 'caption' }}>
                     Atividade
                   </FormLabel>
@@ -527,6 +620,7 @@ export function ClienteFormDialog({
                       />
                     ))}
                   </FormGroup>
+                  {form.atividades.length === 0 ? <FormHelperText>Escolha ao menos uma</FormHelperText> : null}
                 </FormControl>
                 <FormControl component="fieldset">
                   <FormLabel component="legend" sx={{ typography: 'caption' }}>
@@ -550,19 +644,40 @@ export function ClienteFormDialog({
                   </FormGroup>
                 </FormControl>
               </Stack>
+              {form.atividades.includes('servicos') ? (
+                <Autocomplete
+                  multiple
+                  size="small"
+                  options={SERVICOS_LC116}
+                  value={form.servicosPrestados}
+                  getOptionLabel={(s) => `${s.codigo}. ${s.descricao}`}
+                  isOptionEqualToValue={(a, b) => a.codigo === b.codigo}
+                  onChange={(_event, value) => set('servicosPrestados', value)}
+                  limitTags={3}
+                  renderInput={(params) => (
+                    <TextField
+                      {...params}
+                      label="Opções de serviços"
+                      helperText="Lista de Serviços da LC 116/2003 (base do ISS/inscrição municipal)"
+                    />
+                  )}
+                />
+              ) : null}
               <Stack direction={{ xs: 'column', sm: 'row' }} spacing={2}>
                 <TextField
                   label="Inscrição estadual"
                   value={form.inscricaoEstadual}
                   onChange={(event) => set('inscricaoEstadual', event.target.value)}
-                  helperText="Comércio/indústria (NF-e)"
+                  required={form.atividades.includes('comercio')}
+                  helperText="Obrigatória para comércio"
                   fullWidth
                 />
                 <TextField
                   label="Inscrição municipal"
                   value={form.inscricaoMunicipal}
                   onChange={(event) => set('inscricaoMunicipal', event.target.value)}
-                  helperText="Serviços (NFS-e)"
+                  required
+                  helperText="Obrigatória para todas as atividades"
                   fullWidth
                 />
               </Stack>

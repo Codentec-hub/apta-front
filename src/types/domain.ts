@@ -57,6 +57,7 @@ export interface Cliente {
   cnaeDescricao: string | null;
   cnaesSecundarios: { codigo: string; descricao: string }[] | null;
   atividades: AtividadeEmpresa[];
+  servicosPrestados: { codigo: string; descricao: string }[] | null;
   inscricaoEstadual: string | null;
   inscricaoMunicipal: string | null;
   notasEmitidas: NotaEmitida[];
@@ -67,7 +68,7 @@ export interface Cliente {
 }
 
 // "Contatos na empresa": quem recebe os documentos de cada departamento.
-export type AtividadeEmpresa = 'servicos' | 'comercio' | 'industria';
+export type AtividadeEmpresa = 'servicos' | 'comercio' | 'industria' | 'particular';
 export type NotaEmitida = 'nfse' | 'nfe' | 'nfce' | 'cte';
 
 // Resultado da consulta do CNPJ na Receita (GET /consulta-cnpj/:cnpj).

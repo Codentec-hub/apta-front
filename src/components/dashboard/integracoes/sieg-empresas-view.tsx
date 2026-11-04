@@ -57,7 +57,6 @@ interface RespostaEmpresas {
 	erro: string | null;
 	avisos?: string[];
 	empresas: EmpresaSieg[];
-	clientesSemSieg: { id: string; nome: string; documento: string }[];
 	totalClientesAtivos: number;
 }
 
@@ -481,33 +480,6 @@ export function SiegEmpresasView(): React.JSX.Element {
 					labelRowsPerPage="Linhas por página"
 				/>
 			</Paper>
-
-			{dados?.situacao === "concluida" && dados.clientesSemSieg.length > 0 ? (
-				<Card variant="outlined">
-					<CardContent>
-						<Stack spacing={1.5}>
-							<Typography variant="h6">
-								Clientes da Apta que não estão na SIEG ({dados.clientesSemSieg.length})
-							</Typography>
-							<Typography color="text.secondary" variant="body2">
-								Clientes ativos aqui cujo CNPJ/CPF não aparece na conta SIEG — as notas deles não serão capturadas.
-							</Typography>
-							<Stack direction="row" sx={{ flexWrap: "wrap", gap: 1 }}>
-								{dados.clientesSemSieg.map((c) => (
-									<Chip
-										key={c.id}
-										component={RouterLink}
-										href={`${paths.dashboard.clientes}/${c.id}`}
-										clickable
-										label={`${c.nome} · ${formatarDocumento(c.documento)}`}
-										variant="outlined"
-									/>
-								))}
-							</Stack>
-						</Stack>
-					</CardContent>
-				</Card>
-			) : null}
 		</Stack>
 	);
 }

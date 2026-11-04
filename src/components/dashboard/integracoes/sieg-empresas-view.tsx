@@ -55,12 +55,13 @@ interface RespostaEmpresas {
 	paginasLidas: number;
 	aguardandoLimiteAte: string | null;
 	erro: string | null;
+	avisos?: string[];
 	empresas: EmpresaSieg[];
 	clientesSemSieg: { id: string; nome: string; documento: string }[];
 	totalClientesAtivos: number;
 }
 
-type Filtro = "todas" | "clientes" | "nao-clientes" | "vencidos" | "vencendo" | "inativas";
+type Filtro = "ativas" | "clientes" | "nao-clientes" | "vencidos" | "vencendo" | "inativas";
 
 // Código IBGE da UF -> sigla (o SIEG devolve o código numérico).
 const UF_IBGE: Record<number, string> = {
@@ -92,6 +93,9 @@ const UF_IBGE: Record<number, string> = {
 	52: "GO",
 	53: "DF",
 };
+
+/** Certificado em uso na SIEG (nem inativo, nem excluído). */
+const ativaNaSieg = (e: EmpresaSieg): boolean => e.ativo && !e.deletado;
 
 function situacaoCertificado(expira: string | null): "vencido" | "vencendo" | "ok" | "sem" {
 	if (!expira) return "sem";
@@ -155,7 +159,7 @@ export function SiegEmpresasView(): React.JSX.Element {
 	const [dados, setDados] = React.useState<RespostaEmpresas | null>(null);
 	const [erroTela, setErroTela] = React.useState<string | null>(null);
 	const [busca, setBusca] = React.useState("");
-	const [filtro, setFiltro] = React.useState<Filtro>("todas");
+	const [filtro, setFiltro] = React.useState<Filtro>("ativas");
 
 	const carregar = React.useCallback(async (atualizar = false) => {
 		try {
@@ -182,13 +186,17 @@ export function SiegEmpresasView(): React.JSX.Element {
 		return () => clearInterval(timer);
 	}, [emAndamento, carregar]);
 
-	const empresas = React.useMemo(() => (dados?.empresas ?? []).filter((e) => !e.deletado), [dados]);
+	// Tudo que veio da SIEG; "ativa" = certificado em uso (nem inativo, nem excluído).
+	const empresas = React.useMemo(() => dados?.empresas ?? [], [dados]);
 
 	const contagem = React.useMemo(() => {
 		const c = { ativas: 0, clientes: 0, naoClientes: 0, vencidos: 0, vencendo: 0, inativas: 0, noturna: 0 };
 		for (const e of empresas) {
-			if (e.ativo) c.ativas++;
-			else c.inativas++;
+			if (!ativaNaSieg(e)) {
+				c.inativas++;
+				continue;
+			}
+			c.ativas++;
 			if (e.cliente) c.clientes++;
 			else c.naoClientes++;
 			const s = situacaoCertificado(e.certificadoExpiraEm);
@@ -205,6 +213,8 @@ export function SiegEmpresasView(): React.JSX.Element {
 		return empresas.filter((e) => {
 			if (termo && !e.nome.toLowerCase().includes(termo) && !(digitos && e.documento.includes(digitos))) return false;
 			const s = situacaoCertificado(e.certificadoExpiraEm);
+			if (filtro === "inativas") return !ativaNaSieg(e);
+			if (!ativaNaSieg(e)) return false;
 			switch (filtro) {
 				case "clientes": {
 					return Boolean(e.cliente);
@@ -217,9 +227,6 @@ export function SiegEmpresasView(): React.JSX.Element {
 				}
 				case "vencendo": {
 					return s === "vencendo";
-				}
-				case "inativas": {
-					return !e.ativo;
 				}
 				default: {
 					return true;
@@ -315,17 +322,24 @@ export function SiegEmpresasView(): React.JSX.Element {
 
 			{dados?.situacao === "concluida" ? (
 				<Alert severity="success">
-					Integração funcionando: {empresas.length} empresas lidas da SIEG em {dados.paginasLidas} página(s), às{" "}
+					Integração funcionando: {contagem.ativas} empresas ativas lidas da SIEG
+					{contagem.inativas > 0 ? ` (mais ${contagem.inativas} inativas/excluídas)` : ""} às{" "}
 					{dayjs(dados.concluidaEm).format("HH:mm [de] DD/MM/YYYY")}.
 				</Alert>
 			) : null}
 
+			{(dados?.avisos ?? []).map((aviso) => (
+				<Alert key={aviso} severity="warning">
+					{aviso}
+				</Alert>
+			))}
+
 			<Grid container spacing={2}>
 				<Grid size={{ xs: 6, md: 3 }}>
 					<Indicador
-						titulo="Com certificado na SIEG"
-						valor={empresas.length}
-						nota={`${contagem.ativas} ativas · ${contagem.noturna} com consulta noturna`}
+						titulo="Ativas na SIEG"
+						valor={contagem.ativas}
+						nota={`${contagem.noturna} com consulta noturna · ${contagem.inativas} inativas/excluídas`}
 					/>
 				</Grid>
 				<Grid size={{ xs: 6, md: 3 }}>
@@ -369,12 +383,12 @@ export function SiegEmpresasView(): React.JSX.Element {
 						onChange={(_e, v: Filtro | null) => v && setFiltro(v)}
 						sx={{ flexWrap: "wrap" }}
 					>
-						<ToggleButton value="todas">Todas ({empresas.length})</ToggleButton>
+						<ToggleButton value="ativas">Ativas ({contagem.ativas})</ToggleButton>
 						<ToggleButton value="clientes">Clientes Apta ({contagem.clientes})</ToggleButton>
 						<ToggleButton value="nao-clientes">Fora da Apta ({contagem.naoClientes})</ToggleButton>
 						<ToggleButton value="vencidos">Vencidos ({contagem.vencidos})</ToggleButton>
 						<ToggleButton value="vencendo">Vencendo ({contagem.vencendo})</ToggleButton>
-						<ToggleButton value="inativas">Inativas ({contagem.inativas})</ToggleButton>
+						<ToggleButton value="inativas">Inativas/excluídas ({contagem.inativas})</ToggleButton>
 					</ToggleButtonGroup>
 				</Stack>
 				<TableContainer>
@@ -396,8 +410,13 @@ export function SiegEmpresasView(): React.JSX.Element {
 									<TableRow key={e.id || e.documento} hover>
 										<TableCell>
 											<Typography variant="body2">{e.nome || "—"}</Typography>
-											{e.ativo ? null : (
-												<Chip label="Inativa no SIEG" size="small" variant="outlined" sx={{ mt: 0.5 }} />
+											{ativaNaSieg(e) ? null : (
+												<Chip
+													label={e.deletado ? "Excluída na SIEG" : "Inativa na SIEG"}
+													size="small"
+													variant="outlined"
+													sx={{ mt: 0.5 }}
+												/>
 											)}
 										</TableCell>
 										<TableCell sx={{ whiteSpace: "nowrap" }}>{formatarDocumento(e.documento)}</TableCell>

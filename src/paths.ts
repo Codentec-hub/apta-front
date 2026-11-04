@@ -13,6 +13,7 @@ export const paths = {
     contabil: '/dashboard/contabil',
     automacao: '/dashboard/automacao',
     integracoes: '/dashboard/integracoes',
+    integracoesSieg: '/dashboard/integracoes/sieg',
     usuarios: '/dashboard/usuarios',
     setores: '/dashboard/setores',
     feriados: '/dashboard/feriados',

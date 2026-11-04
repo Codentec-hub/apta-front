@@ -1,8 +1,10 @@
 'use client';
 
 import * as React from 'react';
+import RouterLink from 'next/link';
 import Alert from '@mui/material/Alert';
 import Box from '@mui/material/Box';
+import Button from '@mui/material/Button';
 import Card from '@mui/material/Card';
 import CardContent from '@mui/material/CardContent';
 import Chip from '@mui/material/Chip';
@@ -14,6 +16,7 @@ import Typography from '@mui/material/Typography';
 import { PlugsConnectedIcon } from '@phosphor-icons/react/dist/ssr/PlugsConnected';
 import dayjs from 'dayjs';
 
+import { paths } from '@/paths';
 import { api } from '@/lib/api';
 
 interface StatusSieg {
@@ -111,6 +114,14 @@ export function IntegracoesView(): React.JSX.Element {
                   <CampoStatus label="Expira em" valor={dayjs(status.oauthExpiraEm).format('DD/MM/YYYY')} />
                 ) : null}
               </Stack>
+            ) : null}
+
+            {status?.clientIdConfigurado ? (
+              <Box>
+                <Button component={RouterLink} href={paths.dashboard.integracoesSieg} variant="outlined" size="small">
+                  Ver empresas na SIEG
+                </Button>
+              </Box>
             ) : null}
           </Stack>
         </CardContent>

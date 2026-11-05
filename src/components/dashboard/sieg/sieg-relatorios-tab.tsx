@@ -2,6 +2,7 @@
 
 import * as React from "react";
 import Alert from "@mui/material/Alert";
+import AlertTitle from "@mui/material/AlertTitle";
 import Autocomplete from "@mui/material/Autocomplete";
 import Button from "@mui/material/Button";
 import CircularProgress from "@mui/material/CircularProgress";
@@ -136,7 +137,19 @@ export function SiegRelatoriosTab(): React.JSX.Element {
 						{DESCRICOES[relatorio]}
 					</Typography>
 				) : null}
-				{erro ? <Alert severity="error">{erro}</Alert> : null}
+				{erro ? (
+					erro.startsWith("Não há dados") ? (
+						<Alert severity="warning" onClose={() => setErro(null)}>
+							<AlertTitle>Relatório não gerado</AlertTitle>
+							{erro}
+						</Alert>
+					) : (
+						<Alert severity="error" onClose={() => setErro(null)}>
+							<AlertTitle>Não foi possível gerar o relatório</AlertTitle>
+							{erro}
+						</Alert>
+					)
+				) : null}
 				{ok ? <Alert severity="success">{ok}</Alert> : null}
 				<Stack direction="row">
 					<Button

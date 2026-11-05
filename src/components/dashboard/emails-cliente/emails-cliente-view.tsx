@@ -14,6 +14,8 @@ import { useUser } from '@/hooks/use-user';
 import { PODE_ALTERAR_PRAZOS } from '@/lib/obrigacao-status';
 import type { ConfiguracaoEnvio } from '@/types/domain';
 
+import { EnvioMensalSaudeFiscal } from './envio-mensal-saude-fiscal';
+
 // "3, 1" → [3, 1]; null se tiver algo que não seja número de 0 a 60.
 function lerDias(texto: string): number[] | null {
   const partes = texto
@@ -146,6 +148,8 @@ export function EmailsClienteView(): React.JSX.Element {
           )}
         </Stack>
       </Paper>
+
+      <EnvioMensalSaudeFiscal podeEditar={podeEditar} ehAdmin={user?.perfil === 'ADMIN'} />
 
       <Snackbar open={salvo} autoHideDuration={3000} onClose={() => setSalvo(false)} message="Configuração salva" />
     </Stack>

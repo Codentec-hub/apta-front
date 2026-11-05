@@ -28,6 +28,7 @@ import ToggleButtonGroup from "@mui/material/ToggleButtonGroup";
 import Tooltip from "@mui/material/Tooltip";
 import Typography from "@mui/material/Typography";
 import { ArrowClockwiseIcon } from "@phosphor-icons/react/dist/ssr/ArrowClockwise";
+import { FileZipIcon } from "@phosphor-icons/react/dist/ssr/FileZip";
 import { FileCodeIcon } from "@phosphor-icons/react/dist/ssr/FileCode";
 import { FilePdfIcon } from "@phosphor-icons/react/dist/ssr/FilePdf";
 import { ListBulletsIcon } from "@phosphor-icons/react/dist/ssr/ListBullets";
@@ -76,6 +77,7 @@ interface Nota {
 	destinatarioNome: string | null;
 	valor: number | null;
 	naturezaOperacao: string | null;
+	cancelada?: boolean;
 }
 
 interface RespostaNotas {
@@ -303,9 +305,28 @@ export function SiegNotasTab({ podeAcionar, documentoInicial }: Props): React.JS
 									{formatarDocumento(empresa.documento)} · {rotuloMes(mes)}
 								</Typography>
 							</Box>
-							<Button size="small" onClick={() => setEmpresa(null)}>
-								Voltar para todas
-							</Button>
+							<Stack direction="row" spacing={1} sx={{ alignItems: "flex-start" }}>
+								<Tooltip title="XMLs já guardados de todos os tipos (pastas emitidas e recebidas), para importar na Domínio">
+									<Button
+										size="small"
+										variant="outlined"
+										disabled={baixando !== null}
+										startIcon={baixando === "zip" ? <CircularProgress size={14} /> : <FileZipIcon />}
+										onClick={() => {
+											setBaixando("zip");
+											setErro(null);
+											baixarArquivoApi(`/sieg/dados/notas/zip?documento=${empresa.documento}&mes=${mes}`, `xmls-${empresa.documento}-${mes}.zip`)
+												.catch((error: unknown) => setErro(error instanceof Error ? error.message : "Erro ao baixar o ZIP"))
+												.finally(() => setBaixando(null));
+										}}
+									>
+										XMLs do mês (ZIP)
+									</Button>
+								</Tooltip>
+								<Button size="small" onClick={() => setEmpresa(null)}>
+									Voltar para todas
+								</Button>
+							</Stack>
 						</Stack>
 
 						<Stack direction={{ xs: "column", md: "row" }} spacing={2}>
@@ -389,6 +410,9 @@ export function SiegNotasTab({ podeAcionar, documentoInicial }: Props): React.JS
 											<TableRow key={n.chave} hover>
 												<TableCell>
 													{n.numero ?? "—"}
+													{n.cancelada ? (
+														<Chip size="small" color="error" variant="outlined" label="Cancelada" sx={{ ml: 1 }} />
+													) : null}
 													{n.serie ? (
 														<Typography component="span" variant="caption" color="text.secondary">
 															{" "}

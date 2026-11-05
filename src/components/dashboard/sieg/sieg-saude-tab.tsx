@@ -8,6 +8,7 @@ import CardContent from "@mui/material/CardContent";
 import Chip from "@mui/material/Chip";
 import CircularProgress from "@mui/material/CircularProgress";
 import Grid from "@mui/material/Grid";
+import LinearProgress from "@mui/material/LinearProgress";
 import Paper from "@mui/material/Paper";
 import Stack from "@mui/material/Stack";
 import Table from "@mui/material/Table";
@@ -15,10 +16,12 @@ import TableBody from "@mui/material/TableBody";
 import TableCell from "@mui/material/TableCell";
 import TableHead from "@mui/material/TableHead";
 import TableRow from "@mui/material/TableRow";
+import TextField from "@mui/material/TextField";
 import Typography from "@mui/material/Typography";
 import dayjs from "dayjs";
 
 import { api } from "@/lib/api";
+import { rotuloMes } from "@/lib/sieg";
 
 interface Saude {
 	credenciaisConfiguradas: boolean;
@@ -32,11 +35,27 @@ interface Saude {
 	sincronizacao: {
 		ultimaEm: string | null;
 		erro: string | null;
-		agendamento: { rodando: boolean; ultimaVerificacao: string | null; ultimaAcao: string | null; horario: string };
+		agendamento: {
+			rodando: boolean;
+			etapa: string | null;
+			ultimaVerificacao: string | null;
+			ultimaAcao: string | null;
+			horario: string;
+		};
+		captura: {
+			situacao: "parada" | "andamento" | "concluida" | "pausada" | "erro";
+			pendentes: number;
+			feitas: number;
+			notas: number;
+			erros: string[];
+			ultimaEm: string | null;
+			ultimoResumo: string | null;
+		};
 		contagens: { situacao: string; mes: string | null; feitas: number; total: number };
 		ultimaContagemEm: string | null;
 	};
 	dados: { empresasAtivas: number; notasCapturadas: number };
+	corte: { meses: string[]; diaCorte: number };
 	chamadas24h: { rota: string; total: number; erros: number; mediaMs: number }[];
 	ultimosErros: { rota: string; status: number | null; erro: string; criadoEm: string }[];
 }
@@ -72,6 +91,7 @@ export function SiegSaudeTab({ podeAcionar, ehAdmin }: { podeAcionar: boolean; e
 	const [erro, setErro] = React.useState<string | null>(null);
 	const [aviso, setAviso] = React.useState<string | null>(null);
 	const [acao, setAcao] = React.useState<string | null>(null);
+	const [diaCorte, setDiaCorte] = React.useState("");
 
 	const carregar = React.useCallback(async () => {
 		try {
@@ -87,6 +107,21 @@ export function SiegSaudeTab({ podeAcionar, ehAdmin }: { podeAcionar: boolean; e
 		const t = setInterval(() => void carregar(), 15_000);
 		return () => clearInterval(t);
 	}, [carregar]);
+
+	async function salvarCorte() {
+		setAcao("corte");
+		setErro(null);
+		try {
+			await api("/sieg/dados/corte", { method: "PUT", body: JSON.stringify({ diaCorte: Number(diaCorte) }) });
+			setAviso(`Data de corte salva: dia ${diaCorte}.`);
+			setDiaCorte("");
+			await carregar();
+		} catch (error) {
+			setErro(error instanceof Error ? error.message : "Erro ao salvar a data de corte");
+		} finally {
+			setAcao(null);
+		}
+	}
 
 	async function executar(nome: string, path: string, sucesso: string) {
 		setAcao(nome);
@@ -106,6 +141,7 @@ export function SiegSaudeTab({ podeAcionar, ehAdmin }: { podeAcionar: boolean; e
 	if (!saude) return erro ? <Alert severity="error">{erro}</Alert> : <CircularProgress size={24} />;
 
 	const t = saude.token;
+	const cap = saude.sincronizacao.captura;
 	const corToken = t.autorizado ? (t.diasParaVencer ?? 0) <= 7 ? "warning" : "success" : "error";
 
 	return (
@@ -164,13 +200,23 @@ export function SiegSaudeTab({ podeAcionar, ehAdmin }: { podeAcionar: boolean; e
 							<Stack spacing={1}>
 								<Stack direction="row" sx={{ justifyContent: "space-between", alignItems: "center" }}>
 									<Typography variant="h6">Busca automática</Typography>
-									{saude.sincronizacao.agendamento.rodando ? <Chip size="small" color="info" label="Rodando" /> : null}
+									{saude.sincronizacao.agendamento.rodando ? (
+										<Chip
+											size="small"
+											color="info"
+											label={
+												saude.sincronizacao.agendamento.etapa
+													? `Rodando: ${saude.sincronizacao.agendamento.etapa}`
+													: "Rodando"
+											}
+										/>
+									) : null}
 								</Stack>
 								<Linha rotulo="Quando" valor={saude.sincronizacao.agendamento.horario} />
 								<Linha rotulo="Última busca completa" valor={dataHora(saude.sincronizacao.ultimaEm)} />
 								<Linha rotulo="Última contagem de notas" valor={dataHora(saude.sincronizacao.ultimaContagemEm)} />
 								<Typography variant="caption" color="text.secondary">
-									Atualiza empresas, status dos certificados e conta as notas do mês atual e do anterior.
+									Atualiza empresas e certificados, conta as notas dos meses em aberto e guarda os XMLs que faltam.
 								</Typography>
 								{saude.sincronizacao.erro ? <Alert severity="warning">{saude.sincronizacao.erro}</Alert> : null}
 								{ehAdmin ? (
@@ -182,7 +228,7 @@ export function SiegSaudeTab({ podeAcionar, ehAdmin }: { podeAcionar: boolean; e
 											void executar(
 												"sync",
 												"/sieg/dados/sincronizar",
-												"Busca completa iniciada. Pode levar perto de uma hora por causa do limite de consultas da SIEG."
+												"Busca completa iniciada: empresas, contagens e depois os XMLs que faltam. Pode levar horas por causa do limite de consultas da SIEG."
 											)
 										}
 									>
@@ -204,6 +250,104 @@ export function SiegSaudeTab({ podeAcionar, ehAdmin }: { podeAcionar: boolean; e
 									rotulo="Chamadas nas últimas 24h"
 									valor={saude.chamadas24h.reduce((s, c) => s + c.total, 0).toLocaleString("pt-BR")}
 								/>
+							</Stack>
+						</CardContent>
+					</Card>
+				</Grid>
+			</Grid>
+
+			<Grid container spacing={2}>
+				<Grid size={{ xs: 12, md: 8 }}>
+					<Card variant="outlined" sx={{ height: "100%" }}>
+						<CardContent>
+							<Stack spacing={1}>
+								<Stack direction="row" sx={{ justifyContent: "space-between", alignItems: "center" }}>
+									<Typography variant="h6">Captura dos XMLs</Typography>
+									<Chip
+										size="small"
+										color={
+											cap.situacao === "andamento"
+												? "info"
+												: cap.situacao === "erro"
+													? "error"
+													: cap.situacao === "pausada"
+														? "warning"
+														: "default"
+										}
+										label={
+											{
+												parada: "Aguardando a noite",
+												andamento: "Baixando",
+												concluida: "Em dia",
+												pausada: "Continua na próxima noite",
+												erro: "Com erro",
+											}[cap.situacao]
+										}
+									/>
+								</Stack>
+								<Typography variant="body2" color="text.secondary">
+									Toda noite o sistema baixa da SIEG os XMLs que ainda não tem guardados (só o que falta, comparando com a
+									contagem). A SIEG entrega 100 notas por minuto, então a primeira carga leva algumas noites: a captura
+									para às 8h e continua na noite seguinte. Os XMLs guardados alimentam o relatório de saúde fiscal e o ZIP
+									para a Domínio.
+								</Typography>
+								{cap.situacao === "andamento" ? (
+									<>
+										<Linha rotulo="Andamento" valor={`${cap.feitas} de ${cap.pendentes} lote(s) · ${cap.notas} nota(s)`} />
+										<LinearProgress
+											variant="determinate"
+											value={cap.pendentes ? (cap.feitas / cap.pendentes) * 100 : 0}
+										/>
+									</>
+								) : null}
+								<Linha rotulo="Última captura" valor={dataHora(cap.ultimaEm)} />
+								{cap.ultimoResumo ? <Linha rotulo="Resultado" valor={cap.ultimoResumo} /> : null}
+								{cap.erros.length > 0 ? (
+									<Alert severity="warning">
+										{cap.erros.length} erro(s): {cap.erros.slice(-3).join(" | ")}
+									</Alert>
+								) : null}
+							</Stack>
+						</CardContent>
+					</Card>
+				</Grid>
+				<Grid size={{ xs: 12, md: 4 }}>
+					<Card variant="outlined" sx={{ height: "100%" }}>
+						<CardContent>
+							<Stack spacing={1}>
+								<Typography variant="h6">Data de corte</Typography>
+								<Typography variant="body2" color="text.secondary">
+									Até o dia {saude.corte.diaCorte} de cada mês, o mês anterior ainda é recontado e recapturado de noite
+									(notas que chegam atrasadas na SIEG e cancelamentos). Depois disso, só o mês atual.
+								</Typography>
+								<Linha rotulo="Meses em aberto hoje" valor={saude.corte.meses.map((m) => rotuloMes(m)).join(", ")} />
+								{saude.corte.meses.length > 1 ? (
+									<Alert severity="warning">
+										{rotuloMes(saude.corte.meses[1]!)} ainda pode mudar até o dia {saude.corte.diaCorte}. Apure depois do
+										corte para não deixar nota de fora.
+									</Alert>
+								) : null}
+								{podeAcionar ? (
+									<Stack direction="row" spacing={1}>
+										<TextField
+											size="small"
+											type="number"
+											label="Novo dia de corte"
+											value={diaCorte}
+											onChange={(e) => setDiaCorte(e.target.value)}
+											slotProps={{ htmlInput: { min: 1, max: 28 } }}
+											sx={{ width: 160 }}
+										/>
+										<Button
+											size="small"
+											variant="outlined"
+											disabled={acao !== null || !diaCorte || Number(diaCorte) < 1 || Number(diaCorte) > 28}
+											onClick={() => void salvarCorte()}
+										>
+											Salvar
+										</Button>
+									</Stack>
+								) : null}
 							</Stack>
 						</CardContent>
 					</Card>

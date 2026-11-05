@@ -45,6 +45,7 @@ import { ObrigacoesDaEmpresa } from '../obrigacoes/obrigacoes-da-empresa';
 import { ClienteFormDialog } from './cliente-form-dialog';
 import { ContatosEmpresa } from './contatos-empresa';
 import { DadosFiscais } from './dados-fiscais';
+import { SaudeFiscalCliente } from './saude-fiscal-cliente';
 import { SiegResumoCliente } from './sieg-resumo-cliente';
 
 const STATUS_ATENDIMENTO_LABEL: Record<Atendimento['status'], string> = {
@@ -187,6 +188,8 @@ export function ClienteDetalheView({ clienteId }: ClienteDetalheViewProps): Reac
       </Stack>
 
       <SiegResumoCliente clienteId={cliente.id} documento={cliente.cnpj} />
+
+      <SaudeFiscalCliente clienteId={cliente.id} />
 
       <ContatosEmpresa clienteId={cliente.id} setores={setores} />
 

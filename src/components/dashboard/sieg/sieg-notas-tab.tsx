@@ -452,7 +452,7 @@ export function SiegNotasTab({ podeAcionar, documentoInicial }: Props): React.JS
 															<FilePdfIcon />
 														</IconButton>
 													</Tooltip>
-													{n.tipo === "nfe" || n.tipo === "nfce" || n.tipo === "cte" || n.tipo === "nfse" ? (
+													{n.tipo === "nfe" || n.tipo === "nfce" || n.tipo === "cte" ? (
 														<Tooltip title="Eventos (cancelamento, carta de correção…)">
 															<IconButton size="small" onClick={() => void verEventos(n)}>
 																<ListBulletsIcon />

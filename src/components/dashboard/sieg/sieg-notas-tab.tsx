@@ -191,12 +191,12 @@ export function SiegNotasTab({ podeAcionar, documentoInicial }: Props): React.JS
 		}
 	}
 
-	async function baixar(nota: Nota, formato: "xml" | "danfe") {
+	async function baixar(nota: Nota, formato: "xml") {
 		setBaixando(`${nota.chave}-${formato}`);
 		await acionar(() =>
 			baixarArquivoApi(
 				`/sieg/dados/notas/${encodeURIComponent(nota.chave)}/${formato}`,
-				`${nota.chave}.${formato === "xml" ? "xml" : "pdf"}`
+				`${nota.chave}.xml`
 			)
 		);
 		setBaixando(null);
@@ -441,18 +441,18 @@ export function SiegNotasTab({ podeAcionar, documentoInicial }: Props): React.JS
 															{baixando === `${n.chave}-xml` ? <CircularProgress size={16} /> : <FileCodeIcon />}
 														</IconButton>
 													</Tooltip>
-													{n.tipo === "nfe" || n.tipo === "nfce" ? (
-														<Tooltip title="Baixar DANFE (PDF)">
-															<IconButton
-																size="small"
-																disabled={baixando !== null}
-																onClick={() => void baixar(n, "danfe")}
-															>
-																{baixando === `${n.chave}-danfe` ? <CircularProgress size={16} /> : <FilePdfIcon />}
-															</IconButton>
-														</Tooltip>
-													) : null}
-													{n.tipo === "nfe" || n.tipo === "nfce" || n.tipo === "cte" ? (
+													<Tooltip title={n.tipo === "nfe" || n.tipo === "nfce" ? "Ver DANFE (imprimir / PDF)" : "Ver a nota (imprimir / PDF)"}>
+														<IconButton
+															size="small"
+															component="a"
+															href={`/nota/${encodeURIComponent(n.chave)}`}
+															target="_blank"
+															rel="noopener"
+														>
+															<FilePdfIcon />
+														</IconButton>
+													</Tooltip>
+													{n.tipo === "nfe" || n.tipo === "nfce" || n.tipo === "cte" || n.tipo === "nfse" ? (
 														<Tooltip title="Eventos (cancelamento, carta de correção…)">
 															<IconButton size="small" onClick={() => void verEventos(n)}>
 																<ListBulletsIcon />

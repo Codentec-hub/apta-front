@@ -384,7 +384,9 @@ export function SiegNotasTab({ podeAcionar, documentoInicial }: Props): React.JS
 										? `Buscando… ${notas.busca.notas} nota(s) em ${notas.busca.paginas} página(s). A SIEG entrega 50 notas a cada 30 s.`
 										: notas.busca.situacao === "erro"
 											? `A última busca falhou: ${notas.busca.erro}`
-											: `Última busca: ${dayjs(notas.busca.concluidaEm).format("DD/MM/YYYY HH:mm")} · ${notas.busca.notas} nota(s).`
+											: `Última busca: ${dayjs(notas.busca.concluidaEm).format("DD/MM/YYYY HH:mm")} · ${notas.busca.notas} nota(s).${
+													notas.busca.erro ? ` ${notas.busca.erro}` : ""
+												}`
 									: "Ainda não buscamos as notas desta combinação na SIEG."}
 								{esperado !== null && notas ? ` A SIEG contou ${esperado}.` : ""}
 							</Typography>

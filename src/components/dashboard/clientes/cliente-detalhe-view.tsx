@@ -38,6 +38,7 @@ import { api } from '@/lib/api';
 import { formatarCodigo, formatarDocumento } from '@/lib/empresa';
 import { competenciaAnual, formatarCompetencia, statusDaObrigacao } from '@/lib/obrigacao-status';
 import { useUser } from '@/hooks/use-user';
+import { AuditoriaView } from '@/components/dashboard/auditoria/auditoria-view';
 
 import { RegistrarAtendimentoDialog } from '../atendimento/dialogs-conversa';
 import { ObrigacaoFormDialog } from '../obrigacoes/obrigacao-form-dialog';
@@ -359,6 +360,13 @@ export function ClienteDetalheView({ clienteId }: ClienteDetalheViewProps): Reac
         onClose={() => setDialogAtendimentoAberto(false)}
         onRegistrado={(conversaId) => router.push(`${paths.dashboard.atendimento}?conversa=${conversaId}`)}
       />
+
+      {user && (user.perfil === 'ADMIN' || user.perfil === 'GESTOR') ? (
+        <Stack spacing={2}>
+          <Typography variant="h6">Histórico de alterações</Typography>
+          <AuditoriaView clienteId={cliente.id} compacto />
+        </Stack>
+      ) : null}
 
       <Snackbar open={Boolean(erro)} autoHideDuration={5000} onClose={() => setErro(null)}>
         <Alert onClose={() => setErro(null)} severity="error" sx={{ width: '100%' }}>

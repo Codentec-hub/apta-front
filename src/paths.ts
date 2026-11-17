@@ -20,5 +20,6 @@ export const paths = {
     feriados: '/dashboard/feriados',
     emailsCliente: '/dashboard/emails-cliente',
     agentes: '/dashboard/agentes',
+    auditoria: '/dashboard/auditoria',
   },
 } as const;

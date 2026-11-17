@@ -20,6 +20,13 @@ export const settingsNavItems = [
   { key: 'feriados', perfis: ['ADMIN', 'GESTOR'], title: 'Feriados', href: paths.dashboard.feriados, icon: 'calendar' },
   { key: 'emails-cliente', perfis: ['ADMIN', 'GESTOR'], title: 'E-mails ao cliente', href: paths.dashboard.emailsCliente, icon: 'envelope' },
   { key: 'agentes', perfis: ['ADMIN', 'GESTOR'], title: 'Agentes de IA', href: paths.dashboard.agentes, icon: 'robot' },
+  {
+    key: 'auditoria',
+    perfis: ['ADMIN', 'GESTOR'],
+    title: 'Auditoria',
+    href: paths.dashboard.auditoria,
+    icon: 'historico',
+  },
   { key: 'usuarios', perfis: ['ADMIN'], title: 'Usuários', href: paths.dashboard.usuarios, icon: 'users-three' },
   {
     key: 'integracoes',

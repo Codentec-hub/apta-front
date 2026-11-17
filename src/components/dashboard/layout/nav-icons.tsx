@@ -3,6 +3,7 @@ import { BankIcon } from '@phosphor-icons/react/dist/ssr/Bank';
 import { BuildingsIcon } from '@phosphor-icons/react/dist/ssr/Buildings';
 import { CalculatorIcon } from '@phosphor-icons/react/dist/ssr/Calculator';
 import { CalendarIcon } from '@phosphor-icons/react/dist/ssr/Calendar';
+import { ClockCounterClockwiseIcon } from '@phosphor-icons/react/dist/ssr/ClockCounterClockwise';
 import { ClipboardTextIcon } from '@phosphor-icons/react/dist/ssr/ClipboardText';
 import { EnvelopeSimpleIcon } from '@phosphor-icons/react/dist/ssr/EnvelopeSimple';
 import { FilesIcon } from '@phosphor-icons/react/dist/ssr/Files';
@@ -33,4 +34,5 @@ export const navIcons = {
   'plugs-connected': PlugsConnectedIcon,
   'users-three': UsersThreeIcon,
   'squares-four': SquaresFourIcon,
+  historico: ClockCounterClockwiseIcon,
 } as Record<string, Icon>;

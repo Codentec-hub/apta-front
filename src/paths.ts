@@ -24,5 +24,8 @@ export const paths = {
     escritorio: '/dashboard/escritorio',
     notificacoes: '/dashboard/notificacoes',
     configuracoes: '/dashboard/configuracoes',
+    leads: '/dashboard/leads',
+    agenda: '/dashboard/agenda',
+    leadsConfiguracao: '/dashboard/leads-agendamento',
   },
 } as const;

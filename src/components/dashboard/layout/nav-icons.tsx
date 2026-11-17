@@ -4,11 +4,13 @@ import { BuildingOfficeIcon } from '@phosphor-icons/react/dist/ssr/BuildingOffic
 import { BuildingsIcon } from '@phosphor-icons/react/dist/ssr/Buildings';
 import { CalculatorIcon } from '@phosphor-icons/react/dist/ssr/Calculator';
 import { CalendarIcon } from '@phosphor-icons/react/dist/ssr/Calendar';
+import { CalendarCheckIcon } from '@phosphor-icons/react/dist/ssr/CalendarCheck';
 import { ClockCounterClockwiseIcon } from '@phosphor-icons/react/dist/ssr/ClockCounterClockwise';
 import { ClipboardTextIcon } from '@phosphor-icons/react/dist/ssr/ClipboardText';
 import { EnvelopeSimpleIcon } from '@phosphor-icons/react/dist/ssr/EnvelopeSimple';
 import { GearSixIcon } from '@phosphor-icons/react/dist/ssr/GearSix';
 import { FilesIcon } from '@phosphor-icons/react/dist/ssr/Files';
+import { FunnelIcon } from '@phosphor-icons/react/dist/ssr/Funnel';
 import { HeadsetIcon } from '@phosphor-icons/react/dist/ssr/Headset';
 import { HouseIcon } from '@phosphor-icons/react/dist/ssr/House';
 import { KanbanIcon } from '@phosphor-icons/react/dist/ssr/Kanban';
@@ -39,4 +41,6 @@ export const navIcons = {
   historico: ClockCounterClockwiseIcon,
   escritorio: BuildingOfficeIcon,
   engrenagem: GearSixIcon,
+  funil: FunnelIcon,
+  agenda: CalendarCheckIcon,
 } as Record<string, Icon>;

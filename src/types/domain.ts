@@ -400,6 +400,8 @@ export interface Conversa {
   contato: { id: string; nome: string; cargo: string | null } | null;
   agenteId: string | null;
   agente: { id: string; nome: string } | null;
+  // Conversa de um lead comercial (assistente de leads).
+  lead?: { id: string; nome: string; status: string } | null;
   atendimento: (Omit<Atendimento, 'cliente' | 'setor'> & { setor: { id: string; nome: string } | null }) | null;
 }
 

@@ -30,7 +30,9 @@ import { SidebarSimpleIcon } from '@phosphor-icons/react/dist/ssr/SidebarSimple'
 import { UserIcon } from '@phosphor-icons/react/dist/ssr/User';
 import { WarningCircleIcon } from '@phosphor-icons/react/dist/ssr/WarningCircle';
 import dayjs from 'dayjs';
+import RouterLink from 'next/link';
 
+import { paths } from '@/paths';
 import type { AgenteIA, ConversaDetalhe, Mensagem, StatusWhatsApp } from '@/types/domain';
 import { api } from '@/lib/api';
 import { formatarCodigo } from '@/lib/empresa';
@@ -280,6 +282,18 @@ export function ChatConversa(props: ChatConversaProps): React.JSX.Element {
                 .join(' · ')}
             </Typography>
           </Box>
+          {conversa.lead ? (
+            <Tooltip title={`Lead comercial: ${conversa.lead.nome}. Abrir ficha do lead`}>
+              <Chip
+                label="Lead"
+                color="secondary"
+                size="small"
+                component={RouterLink}
+                href={`${paths.dashboard.leads}?lead=${conversa.lead.id}`}
+                clickable
+              />
+            </Tooltip>
+          ) : null}
           {whatsappDoSistema ? (
             <ToggleButtonGroup
               size="small"

@@ -173,8 +173,9 @@ export function ListaConversas(props: ListaConversasProps): React.JSX.Element {
                     </Stack>
                     <Typography variant="caption" color="text.secondary" noWrap component="div">
                       {[
+                        conversa.lead ? 'Lead' : null,
                         ehWhatsApp(conversa) ? null : nomeCanal(conversa.canal),
-                        conversa.contato?.nome ?? (conversa.cliente ? null : 'Número não identificado'),
+                        conversa.contato?.nome ?? (conversa.cliente || conversa.lead ? null : 'Número não identificado'),
                         atual?.setor?.nome,
                         atual?.responsavel?.nome,
                       ]

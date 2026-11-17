@@ -12,4 +12,6 @@ export interface NavItemConfig {
   // If you need to match multiple paths,
   // can extend it to accept multiple matchers.
   matcher?: { type: 'startsWith' | 'equals'; href: string };
+  /** Só aparece para estes perfis (sem a lista, aparece para todos). */
+  perfis?: ('ADMIN' | 'GESTOR' | 'OPERACIONAL')[];
 }

@@ -13,11 +13,15 @@ import { paths } from '@/paths';
 import { isNavItemActive } from '@/lib/is-nav-item-active';
 import { Logo } from '@/components/core/logo';
 
-import { navItems, settingsNavItems } from './config';
+import { useUser } from '@/hooks/use-user';
+
+import { itensDoPerfil, navItems, settingsNavItems } from './config';
 import { navIcons } from './nav-icons';
 
 export function SideNav(): React.JSX.Element {
   const pathname = usePathname();
+  const { user } = useUser();
+  const configuracoes = itensDoPerfil(settingsNavItems, user?.perfil);
 
   return (
     <Box
@@ -64,14 +68,16 @@ export function SideNav(): React.JSX.Element {
           '&::-webkit-scrollbar': { display: 'none' },
         }}
       >
-        {renderNavItems({ pathname, items: navItems })}
-        <Typography
-          color="var(--mui-palette-neutral-500)"
-          sx={{ fontSize: '0.72rem', textTransform: 'uppercase', letterSpacing: '0.08em', px: '16px', mt: 3, mb: 1 }}
-        >
-          Configurações
-        </Typography>
-        {renderNavItems({ pathname, items: settingsNavItems })}
+        {renderNavItems({ pathname, items: itensDoPerfil(navItems, user?.perfil) })}
+        {configuracoes.length > 0 && (
+          <Typography
+            color="var(--mui-palette-neutral-500)"
+            sx={{ fontSize: '0.72rem', textTransform: 'uppercase', letterSpacing: '0.08em', px: '16px', mt: 3, mb: 1 }}
+          >
+            Configurações
+          </Typography>
+        )}
+        {renderNavItems({ pathname, items: configuracoes })}
       </Box>
     </Box>
   );

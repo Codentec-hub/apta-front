@@ -8,10 +8,15 @@ import MenuList from '@mui/material/MenuList';
 import Popover from '@mui/material/Popover';
 import Typography from '@mui/material/Typography';
 import { SignOutIcon } from '@phosphor-icons/react/dist/ssr/SignOut';
+import { UserCircleIcon } from '@phosphor-icons/react/dist/ssr/UserCircle';
 
 import { authClient } from '@/lib/auth/client';
 import { logger } from '@/lib/default-logger';
 import { useUser } from '@/hooks/use-user';
+
+import { MinhaContaDialog } from './minha-conta-dialog';
+
+const NOME_PERFIL: Record<string, string> = { ADMIN: 'Administrador', GESTOR: 'Gestor', OPERACIONAL: 'Operacional' };
 
 export interface UserPopoverProps {
   anchorEl: Element | null;
@@ -23,6 +28,7 @@ export function UserPopover({ anchorEl, onClose, open }: UserPopoverProps): Reac
   const { user, checkSession } = useUser();
 
   const router = useRouter();
+  const [minhaConta, setMinhaConta] = React.useState(false);
 
   const handleSignOut = React.useCallback(async (): Promise<void> => {
     try {
@@ -42,34 +48,48 @@ export function UserPopover({ anchorEl, onClose, open }: UserPopoverProps): Reac
   }, [checkSession, router]);
 
   return (
-    <Popover
-      anchorEl={anchorEl}
-      anchorOrigin={{ horizontal: 'right', vertical: 'bottom' }}
-      onClose={onClose}
-      open={open}
-      transformOrigin={{ horizontal: 'right', vertical: 'top' }}
-      slotProps={{ paper: { sx: { width: '240px' } } }}
-    >
-      <Box sx={{ p: '16px 20px ' }}>
-        <Typography variant="subtitle1">{user?.nome}</Typography>
-        <Typography color="text.secondary" variant="body2">
-          {user?.email}
-        </Typography>
-        {user?.setor ? (
-          <Typography color="text.secondary" variant="caption">
-            {user.setor.nome} · {user.perfil}
+    <>
+      <Popover
+        anchorEl={anchorEl}
+        anchorOrigin={{ horizontal: 'right', vertical: 'bottom' }}
+        onClose={onClose}
+        open={open}
+        transformOrigin={{ horizontal: 'right', vertical: 'top' }}
+        slotProps={{ paper: { sx: { width: '240px' } } }}
+      >
+        <Box sx={{ p: '16px 20px ' }}>
+          <Typography variant="subtitle1">{user?.nome}</Typography>
+          <Typography color="text.secondary" variant="body2">
+            {user?.email}
           </Typography>
-        ) : null}
-      </Box>
-      <Divider />
-      <MenuList disablePadding sx={{ p: '8px', '& .MuiMenuItem-root': { borderRadius: 1 } }}>
-        <MenuItem onClick={handleSignOut}>
-          <ListItemIcon>
-            <SignOutIcon fontSize="var(--icon-fontSize-md)" />
-          </ListItemIcon>
-          Sair
-        </MenuItem>
-      </MenuList>
-    </Popover>
+          {user?.setor ? (
+            <Typography color="text.secondary" variant="caption">
+              {user.setor.nome} · {NOME_PERFIL[user.perfil] ?? user.perfil}
+            </Typography>
+          ) : null}
+        </Box>
+        <Divider />
+        <MenuList disablePadding sx={{ p: '8px', '& .MuiMenuItem-root': { borderRadius: 1 } }}>
+          <MenuItem
+            onClick={() => {
+              setMinhaConta(true);
+              onClose();
+            }}
+          >
+            <ListItemIcon>
+              <UserCircleIcon fontSize="var(--icon-fontSize-md)" />
+            </ListItemIcon>
+            Minha conta
+          </MenuItem>
+          <MenuItem onClick={handleSignOut}>
+            <ListItemIcon>
+              <SignOutIcon fontSize="var(--icon-fontSize-md)" />
+            </ListItemIcon>
+            Sair
+          </MenuItem>
+        </MenuList>
+      </Popover>
+      <MinhaContaDialog open={minhaConta} onClose={() => setMinhaConta(false)} />
+    </>
   );
 }

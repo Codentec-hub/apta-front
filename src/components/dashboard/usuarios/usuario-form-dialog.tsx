@@ -72,8 +72,12 @@ export function UsuarioFormDialog({
 
   async function salvar(event: React.FormEvent): Promise<void> {
     event.preventDefault();
-    if (!form.nome.trim() || !form.email.trim() || (!usuario && form.senha.length < 6)) {
-      setErro(usuario ? 'Nome e e-mail são obrigatórios' : 'Nome, e-mail e senha (mín. 6 caracteres) são obrigatórios');
+    if (!form.nome.trim() || !form.email.trim() || (!usuario && form.senha.length < 8)) {
+      setErro(usuario ? 'Nome e e-mail são obrigatórios' : 'Nome, e-mail e senha (mín. 8 caracteres) são obrigatórios');
+      return;
+    }
+    if (form.senha.length > 0 && form.senha.length < 8) {
+      setErro('A nova senha precisa ter pelo menos 8 caracteres');
       return;
     }
 
@@ -141,7 +145,7 @@ export function UsuarioFormDialog({
               value={form.senha}
               onChange={(event) => setForm((f) => ({ ...f, senha: event.target.value }))}
               required={!usuario}
-              helperText="Mínimo 6 caracteres"
+              helperText={usuario ? "Preencha só para redefinir a senha (mín. 8 caracteres)" : "Mínimo 8 caracteres"}
               fullWidth
             />
             <FormControl fullWidth>

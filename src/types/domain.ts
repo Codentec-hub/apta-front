@@ -88,6 +88,7 @@ export interface ConsultaCnpj {
   simples: boolean;
   mei: boolean;
   socios: { nome: string; cargo: string | null; responsavelLegal: boolean }[];
+  inscricaoEstadual: string | null;
 }
 
 export interface ContatoCliente {

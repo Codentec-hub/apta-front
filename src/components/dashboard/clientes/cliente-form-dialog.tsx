@@ -340,6 +340,7 @@ export function ClienteFormDialog({
         endereco: r.endereco ?? f.endereco,
         cidade: r.cidade ?? f.cidade,
         uf: r.uf ?? f.uf,
+        inscricaoEstadual: f.inscricaoEstadual || (r.inscricaoEstadual ?? ''),
         // Optante pelo Simples: sugere o regime se ainda não foi escolhido.
         regimeTributario:
           f.regimeTributario || (r.simples && regimes.includes('Simples Nacional') ? 'Simples Nacional' : ''),

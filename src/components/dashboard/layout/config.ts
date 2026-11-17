@@ -16,6 +16,13 @@ export const navItems = [
 ] satisfies NavItemConfig[];
 
 export const settingsNavItems = [
+  {
+    key: 'escritorio',
+    perfis: ['ADMIN', 'GESTOR'],
+    title: 'Escritório',
+    href: paths.dashboard.escritorio,
+    icon: 'escritorio',
+  },
   { key: 'setores', perfis: ['ADMIN', 'GESTOR'], title: 'Setores', href: paths.dashboard.setores, icon: 'squares-four' },
   { key: 'feriados', perfis: ['ADMIN', 'GESTOR'], title: 'Feriados', href: paths.dashboard.feriados, icon: 'calendar' },
   { key: 'emails-cliente', perfis: ['ADMIN', 'GESTOR'], title: 'E-mails ao cliente', href: paths.dashboard.emailsCliente, icon: 'envelope' },
@@ -33,12 +40,16 @@ export const settingsNavItems = [
     title: 'Integrações',
     href: paths.dashboard.integracoes,
     icon: 'plugs-connected',
-    label: 'Em breve',
     perfis: ['ADMIN', 'GESTOR'],
   },
 ] satisfies NavItemConfig[];
 
-/** Itens que o perfil pode ver. */
+/**
+ * Itens que o perfil pode ver. Os marcados "Em breve" (telas ainda em
+ * construção) ficam fora do menu até serem liberados — basta tirar o label.
+ */
 export function itensDoPerfil(itens: NavItemConfig[], perfil: string | undefined): NavItemConfig[] {
-  return itens.filter((i) => !i.perfis || (perfil !== undefined && (i.perfis as string[]).includes(perfil)));
+  return itens.filter(
+    (i) => i.label !== 'Em breve' && (!i.perfis || (perfil !== undefined && (i.perfis as string[]).includes(perfil)))
+  );
 }

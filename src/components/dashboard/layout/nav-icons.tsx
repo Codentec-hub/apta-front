@@ -1,5 +1,6 @@
 import type { Icon } from '@phosphor-icons/react/dist/lib/types';
 import { BankIcon } from '@phosphor-icons/react/dist/ssr/Bank';
+import { BuildingOfficeIcon } from '@phosphor-icons/react/dist/ssr/BuildingOffice';
 import { BuildingsIcon } from '@phosphor-icons/react/dist/ssr/Buildings';
 import { CalculatorIcon } from '@phosphor-icons/react/dist/ssr/Calculator';
 import { CalendarIcon } from '@phosphor-icons/react/dist/ssr/Calendar';
@@ -35,4 +36,5 @@ export const navIcons = {
   'users-three': UsersThreeIcon,
   'squares-four': SquaresFourIcon,
   historico: ClockCounterClockwiseIcon,
+  escritorio: BuildingOfficeIcon,
 } as Record<string, Icon>;

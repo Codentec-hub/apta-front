@@ -12,6 +12,8 @@ import { usePopover } from '@/hooks/use-popover';
 import { useUser } from '@/hooks/use-user';
 
 import { MobileNav } from './mobile-nav';
+import { SinoNotificacoes } from '@/components/dashboard/notificacoes/sino-notificacoes';
+
 import { UserPopover } from './user-popover';
 
 function iniciais(nome?: string): string {
@@ -55,8 +57,11 @@ export function MainNav(): React.JSX.Element {
           >
             <ListIcon />
           </IconButton>
+          <Box sx={{ ml: 'auto' }}>
+            <SinoNotificacoes />
+          </Box>
           <Stack
-            sx={{ alignItems: 'center', cursor: 'pointer', ml: 'auto' }}
+            sx={{ alignItems: 'center', cursor: 'pointer' }}
             direction="row"
             spacing={1.5}
             onClick={userPopover.handleOpen}

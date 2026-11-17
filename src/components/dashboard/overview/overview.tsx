@@ -23,7 +23,6 @@ import { pontualidadeDaObrigacao } from '@/lib/obrigacao-status';
 import type { Indicadores, Obrigacao } from '@/types/domain';
 
 import { PainelInicial } from './painel-inicial';
-import { PrimeirosPassos } from './primeiros-passos';
 
 function percentual(parte: number, total: number): string {
   if (total === 0) return '0%';
@@ -349,7 +348,6 @@ export function Overview(): React.JSX.Element {
   const gestao = user?.perfil === 'ADMIN' || user?.perfil === 'GESTOR';
   return (
     <Stack spacing={4}>
-      <PrimeirosPassos />
       <PainelInicial />
       {gestao ? (
         <Stack spacing={3}>

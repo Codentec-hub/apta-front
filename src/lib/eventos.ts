@@ -4,7 +4,7 @@ import { config } from '@/config';
 
 import { getToken } from './api';
 
-export type EventoTempoReal = { tipo: 'conversa'; conversaId: string };
+export type EventoTempoReal = { tipo: 'conversa'; conversaId: string } | { tipo: 'notificacao'; usuarioId: string };
 
 // Escuta os eventos em tempo real do backend (SSE). O navegador reconecta
 // sozinho se a conexão cair.

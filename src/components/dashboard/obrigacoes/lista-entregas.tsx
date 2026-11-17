@@ -161,6 +161,14 @@ export function ListaEntregas({ dados, onErro }: ListaEntregasProps): React.JSX.
   const [intervalos, setIntervalos] = React.useState<Intervalos>(SEM_INTERVALOS);
   const [mostrarFiltros, setMostrarFiltros] = React.useState(true);
   const [busca, setBusca] = React.useState('');
+  // Link vindo de uma notificação/painel: /dashboard/obrigacoes?busca=<cliente ou entrega>.
+  React.useEffect(() => {
+    const termo = new URLSearchParams(globalThis.location.search).get('busca');
+    if (termo) {
+      setBusca(termo);
+      setStatus(new Set(['pendentes', 'justificadas', 'entregues']));
+    }
+  }, []);
   const [filtroDocs, setFiltroDocs] = React.useState<'' | 'sem_documento' | 'nao_lidos' | 'lidos'>('');
   const [selecionados, setSelecionados] = React.useState<Set<string>>(new Set());
 

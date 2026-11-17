@@ -239,6 +239,7 @@ export function CaixaEntrada(): React.JSX.Element {
   recarregar.current = { carregarLista, carregarDetalhe, carregarResumo };
 
   useEventos((evento) => {
+    if (evento.tipo !== 'conversa') return;
     const p = pendente.current;
     p.lista = true;
     if (evento.conversaId === selecionadaRef.current) p.detalhe = true;

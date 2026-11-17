@@ -8,39 +8,34 @@ export const navItems = [
   { key: 'demandas', title: 'Demandas', href: paths.dashboard.demandas, icon: 'kanban', label: 'Em breve' },
   { key: 'atendimento', title: 'Atendimento', href: paths.dashboard.atendimento, icon: 'headset' },
   { key: 'fiscal', title: 'Fiscal', href: paths.dashboard.fiscal, icon: 'receipt', label: 'Em breve' },
-  { key: 'sieg', title: 'SIEG · Notas fiscais', href: paths.dashboard.sieg, icon: 'files' },
+  { key: 'sieg', title: 'Notas fiscais', href: paths.dashboard.sieg, icon: 'files' },
   { key: 'folha', title: 'Folha de Pagamento', href: paths.dashboard.folha, icon: 'wallet', label: 'Em breve' },
   { key: 'financeiro', title: 'Financeiro', href: paths.dashboard.financeiro, icon: 'bank', label: 'Em breve', perfis: ['ADMIN', 'GESTOR'] },
   { key: 'contabil', title: 'Contábil', href: paths.dashboard.contabil, icon: 'calculator', label: 'Em breve' },
   { key: 'automacao', title: 'Automação e IA', href: paths.dashboard.automacao, icon: 'robot', label: 'Em breve' },
 ] satisfies NavItemConfig[];
 
+/** Páginas de Configurações (menu lateral da própria página), por grupo. */
 export const settingsNavItems = [
+  { key: 'escritorio', grupo: 'Escritório', perfis: ['ADMIN', 'GESTOR'], title: 'Dados do escritório', href: paths.dashboard.escritorio, icon: 'escritorio' },
+  { key: 'usuarios', grupo: 'Escritório', perfis: ['ADMIN'], title: 'Usuários e perfis', href: paths.dashboard.usuarios, icon: 'users-three' },
+  { key: 'setores', grupo: 'Escritório', perfis: ['ADMIN', 'GESTOR'], title: 'Setores', href: paths.dashboard.setores, icon: 'squares-four' },
+  { key: 'feriados', grupo: 'Escritório', perfis: ['ADMIN', 'GESTOR'], title: 'Feriados', href: paths.dashboard.feriados, icon: 'calendar' },
+  { key: 'emails-cliente', grupo: 'Comunicação com o cliente', perfis: ['ADMIN', 'GESTOR'], title: 'E-mails ao cliente', href: paths.dashboard.emailsCliente, icon: 'envelope' },
+  { key: 'agentes', grupo: 'Comunicação com o cliente', perfis: ['ADMIN', 'GESTOR'], title: 'Agentes de IA', href: paths.dashboard.agentes, icon: 'robot' },
+  { key: 'integracoes', grupo: 'Sistema', perfis: ['ADMIN', 'GESTOR'], title: 'Integrações', href: paths.dashboard.integracoes, icon: 'plugs-connected' },
+  { key: 'auditoria', grupo: 'Sistema', perfis: ['ADMIN', 'GESTOR'], title: 'Auditoria', href: paths.dashboard.auditoria, icon: 'historico' },
+] satisfies NavItemConfig[];
+
+/** Rodapé do menu principal: um só item "Configurações" que abre a página com o menu acima. */
+export const rodapeNavItems = [
   {
-    key: 'escritorio',
+    key: 'configuracoes',
     perfis: ['ADMIN', 'GESTOR'],
-    title: 'Escritório',
-    href: paths.dashboard.escritorio,
-    icon: 'escritorio',
-  },
-  { key: 'setores', perfis: ['ADMIN', 'GESTOR'], title: 'Setores', href: paths.dashboard.setores, icon: 'squares-four' },
-  { key: 'feriados', perfis: ['ADMIN', 'GESTOR'], title: 'Feriados', href: paths.dashboard.feriados, icon: 'calendar' },
-  { key: 'emails-cliente', perfis: ['ADMIN', 'GESTOR'], title: 'E-mails ao cliente', href: paths.dashboard.emailsCliente, icon: 'envelope' },
-  { key: 'agentes', perfis: ['ADMIN', 'GESTOR'], title: 'Agentes de IA', href: paths.dashboard.agentes, icon: 'robot' },
-  {
-    key: 'auditoria',
-    perfis: ['ADMIN', 'GESTOR'],
-    title: 'Auditoria',
-    href: paths.dashboard.auditoria,
-    icon: 'historico',
-  },
-  { key: 'usuarios', perfis: ['ADMIN'], title: 'Usuários', href: paths.dashboard.usuarios, icon: 'users-three' },
-  {
-    key: 'integracoes',
-    title: 'Integrações',
-    href: paths.dashboard.integracoes,
-    icon: 'plugs-connected',
-    perfis: ['ADMIN', 'GESTOR'],
+    title: 'Configurações',
+    href: paths.dashboard.configuracoes,
+    icon: 'engrenagem',
+    ativoEm: [paths.dashboard.configuracoes, ...settingsNavItems.map((i) => i.href)],
   },
 ] satisfies NavItemConfig[];
 

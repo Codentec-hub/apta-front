@@ -6,9 +6,14 @@ export function isNavItemActive({
   href,
   matcher,
   pathname,
-}: Pick<NavItemConfig, 'disabled' | 'external' | 'href' | 'matcher'> & { pathname: string }): boolean {
+  ativoEm,
+}: Pick<NavItemConfig, 'disabled' | 'external' | 'href' | 'matcher' | 'ativoEm'> & { pathname: string }): boolean {
   if (disabled || !href || external) {
     return false;
+  }
+
+  if (ativoEm?.some((caminho) => pathname === caminho || pathname.startsWith(`${caminho}/`))) {
+    return true;
   }
 
   if (matcher) {

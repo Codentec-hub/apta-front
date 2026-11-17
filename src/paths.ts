@@ -23,5 +23,6 @@ export const paths = {
     auditoria: '/dashboard/auditoria',
     escritorio: '/dashboard/escritorio',
     notificacoes: '/dashboard/notificacoes',
+    configuracoes: '/dashboard/configuracoes',
   },
 } as const;

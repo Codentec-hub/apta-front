@@ -9,25 +9,32 @@ import Tabs from "@mui/material/Tabs";
 import Typography from "@mui/material/Typography";
 import { ReceiptIcon } from "@phosphor-icons/react/dist/ssr/Receipt";
 
+import { paths } from "@/paths";
 import { useUser } from "@/hooks/use-user";
 import { SiegEmpresasView } from "@/components/dashboard/integracoes/sieg-empresas-view";
 
 import { SiegNotasTab } from "./sieg-notas-tab";
 import { SiegRelatoriosTab } from "./sieg-relatorios-tab";
-import { SiegSaudeTab } from "./sieg-saude-tab";
 
-const ABAS = ["empresas", "notas", "relatorios", "saude"] as const;
+const ABAS = ["empresas", "notas", "relatorios"] as const;
 type Aba = (typeof ABAS)[number];
 
-/** Área da SIEG: empresas, notas fiscais, relatórios e a saúde da integração. */
+/**
+ * Notas fiscais dos clientes (fonte: SIEG): empresas, notas e relatórios.
+ * A saúde da integração fica em Configurações → Integrações.
+ */
 export function SiegView(): React.JSX.Element {
 	const params = useSearchParams();
 	const router = useRouter();
 	const { user } = useUser();
 	const ehAdmin = user?.perfil === "ADMIN";
 	const podeAcionar = ehAdmin || user?.perfil === "GESTOR";
-	const abaUrl = params.get("aba") as Aba | null;
-	const aba: Aba = abaUrl && ABAS.includes(abaUrl) ? abaUrl : "empresas";
+	const abaUrl = params.get("aba") as Aba | "saude" | null;
+	// Link antigo para a saúde da integração: agora fica nas Configurações.
+	React.useEffect(() => {
+		if (abaUrl === "saude") router.replace(paths.dashboard.integracoesSieg);
+	}, [abaUrl, router]);
+	const aba: Aba = abaUrl && (ABAS as readonly string[]).includes(abaUrl) ? (abaUrl as Aba) : "empresas";
 
 	const trocar = (nova: Aba) => {
 		const p = new URLSearchParams(params.toString());
@@ -53,9 +60,10 @@ export function SiegView(): React.JSX.Element {
 					<ReceiptIcon size={22} />
 				</Box>
 				<Box>
-					<Typography variant="h4">SIEG</Typography>
+					<Typography variant="h4">Notas fiscais</Typography>
 					<Typography variant="body2" color="text.secondary">
-						Empresas, notas fiscais e relatórios lidos da conta SIEG da Apta (somente leitura).
+						Notas de entrada e saída dos clientes, capturadas todas as noites, com empresas e relatórios. Fonte: SIEG
+						(somente leitura).
 					</Typography>
 				</Box>
 			</Stack>
@@ -64,13 +72,11 @@ export function SiegView(): React.JSX.Element {
 				<Tab value="empresas" label="Empresas" />
 				<Tab value="notas" label="Notas fiscais" />
 				<Tab value="relatorios" label="Relatórios" />
-				<Tab value="saude" label="Saúde da integração" />
 			</Tabs>
 
 			{aba === "empresas" ? <SiegEmpresasView embutido /> : null}
 			{aba === "notas" ? <SiegNotasTab podeAcionar={podeAcionar} documentoInicial={params.get("documento")} /> : null}
 			{aba === "relatorios" ? <SiegRelatoriosTab /> : null}
-			{aba === "saude" ? <SiegSaudeTab podeAcionar={podeAcionar} ehAdmin={ehAdmin} /> : null}
 		</Stack>
 	);
 }

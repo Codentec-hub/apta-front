@@ -34,9 +34,7 @@ import { paths } from "@/paths";
 import { api } from "@/lib/api";
 import { formatarDocumento } from "@/lib/empresa";
 import { usePaginacao } from "@/hooks/use-paginacao";
-import { useUser } from "@/hooks/use-user";
 
-import { SiegImportarClientesDialog } from "./sieg-importar-clientes-dialog";
 
 interface EmpresaSieg {
 	id: string;
@@ -164,9 +162,6 @@ export function SiegEmpresasView({ embutido = false }: { embutido?: boolean } = 
 	const [erroTela, setErroTela] = React.useState<string | null>(null);
 	const [busca, setBusca] = React.useState("");
 	const [filtro, setFiltro] = React.useState<Filtro>("ativas");
-	const [importando, setImportando] = React.useState(false);
-	const { user } = useUser();
-	const ehAdmin = user?.perfil === "ADMIN";
 
 	const carregar = React.useCallback(async (atualizar = false) => {
 		try {
@@ -242,7 +237,7 @@ export function SiegEmpresasView({ embutido = false }: { embutido?: boolean } = 
 		});
 	}, [empresas, busca, filtro]);
 
-	const paginacao = usePaginacao(filtradas, 25);
+	const paginacao = usePaginacao(filtradas, 10);
 	React.useEffect(() => paginacao.resetarPagina(), [busca, filtro]); // eslint-disable-line react-hooks/exhaustive-deps
 
 	return (
@@ -264,21 +259,14 @@ export function SiegEmpresasView({ embutido = false }: { embutido?: boolean } = 
 							>
 								<ArrowLeftIcon size={14} /> Integrações
 							</Link>
-							<Typography variant="h4">Empresas na SIEG</Typography>
+							<Typography variant="h4">Empresas</Typography>
 						</>
 					)}
 					<Typography color="text.secondary" variant="body2">
-						Empresas com certificado digital cadastrado na conta SIEG da Apta (API “Listar Certificados e Empresas”),
-						lidas agora e cruzadas com os clientes daqui pelo CNPJ/CPF. Empresas sem certificado na SIEG não aparecem
-						nesta consulta.
+						Empresas com certificado digital cadastrado (fonte: SIEG), cruzadas com os clientes pelo CNPJ/CPF.
 					</Typography>
 				</Stack>
 				<Stack direction="row" spacing={1}>
-					{ehAdmin ? (
-						<Button variant="outlined" disabled={dados?.situacao !== "concluida"} onClick={() => setImportando(true)}>
-							Usar como clientes da Apta
-						</Button>
-					) : null}
 					<Button
 						variant="outlined"
 						startIcon={<DownloadSimpleIcon />}
@@ -293,7 +281,7 @@ export function SiegEmpresasView({ embutido = false }: { embutido?: boolean } = 
 						disabled={emAndamento || !dados?.configurado}
 						onClick={() => void carregar(true)}
 					>
-						{emAndamento ? "Buscando…" : "Atualizar do SIEG"}
+						{emAndamento ? "Atualizando…" : "Atualizar"}
 					</Button>
 				</Stack>
 			</Stack>
@@ -336,13 +324,6 @@ export function SiegEmpresasView({ embutido = false }: { embutido?: boolean } = 
 				</Card>
 			) : null}
 
-			{dados?.situacao === "concluida" ? (
-				<Alert severity="success">
-					Integração funcionando: {contagem.ativas} empresas ativas lidas da SIEG
-					{contagem.inativas > 0 ? ` (mais ${contagem.inativas} inativas/excluídas)` : ""}
-					{dados.concluidaEm ? `, atualizadas em ${dayjs(dados.concluidaEm).format("DD/MM/YYYY [às] HH:mm")}` : ""}.
-				</Alert>
-			) : null}
 
 			{(dados?.avisos ?? []).map((aviso) => (
 				<Alert key={aviso} severity="warning">
@@ -515,17 +496,12 @@ export function SiegEmpresasView({ embutido = false }: { embutido?: boolean } = 
 					count={filtradas.length}
 					page={paginacao.pagina}
 					rowsPerPage={paginacao.linhasPorPagina}
-					rowsPerPageOptions={[25, 50, 100]}
+					rowsPerPageOptions={[10, 25, 50, 100]}
 					onPageChange={paginacao.aoMudarPagina}
 					onRowsPerPageChange={paginacao.aoMudarLinhasPorPagina}
 					labelRowsPerPage="Linhas por página"
 				/>
 			</Paper>
-			<SiegImportarClientesDialog
-				aberto={importando}
-				onFechar={() => setImportando(false)}
-				onConcluido={() => void carregar()}
-			/>
 		</Stack>
 	);
 }

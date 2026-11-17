@@ -7,6 +7,7 @@ import { CalendarIcon } from '@phosphor-icons/react/dist/ssr/Calendar';
 import { ClockCounterClockwiseIcon } from '@phosphor-icons/react/dist/ssr/ClockCounterClockwise';
 import { ClipboardTextIcon } from '@phosphor-icons/react/dist/ssr/ClipboardText';
 import { EnvelopeSimpleIcon } from '@phosphor-icons/react/dist/ssr/EnvelopeSimple';
+import { GearSixIcon } from '@phosphor-icons/react/dist/ssr/GearSix';
 import { FilesIcon } from '@phosphor-icons/react/dist/ssr/Files';
 import { HeadsetIcon } from '@phosphor-icons/react/dist/ssr/Headset';
 import { HouseIcon } from '@phosphor-icons/react/dist/ssr/House';
@@ -37,4 +38,5 @@ export const navIcons = {
   'squares-four': SquaresFourIcon,
   historico: ClockCounterClockwiseIcon,
   escritorio: BuildingOfficeIcon,
+  engrenagem: GearSixIcon,
 } as Record<string, Icon>;

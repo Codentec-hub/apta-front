@@ -15,13 +15,13 @@ import { Logo } from '@/components/core/logo';
 
 import { useUser } from '@/hooks/use-user';
 
-import { itensDoPerfil, navItems, settingsNavItems } from './config';
+import { itensDoPerfil, navItems, rodapeNavItems } from './config';
 import { navIcons } from './nav-icons';
 
 export function SideNav(): React.JSX.Element {
   const pathname = usePathname();
   const { user } = useUser();
-  const configuracoes = itensDoPerfil(settingsNavItems, user?.perfil);
+  const configuracoes = itensDoPerfil(rodapeNavItems, user?.perfil);
 
   return (
     <Box
@@ -69,14 +69,7 @@ export function SideNav(): React.JSX.Element {
         }}
       >
         {renderNavItems({ pathname, items: itensDoPerfil(navItems, user?.perfil) })}
-        {configuracoes.length > 0 && (
-          <Typography
-            color="var(--mui-palette-neutral-500)"
-            sx={{ fontSize: '0.72rem', textTransform: 'uppercase', letterSpacing: '0.08em', px: '16px', mt: 3, mb: 1 }}
-          >
-            Configurações
-          </Typography>
-        )}
+        {configuracoes.length > 0 && <Divider sx={{ borderColor: 'var(--mui-palette-neutral-700)', my: 2 }} />}
         {renderNavItems({ pathname, items: configuracoes })}
       </Box>
     </Box>
@@ -103,8 +96,8 @@ interface NavItemProps extends Omit<NavItemConfig, 'items'> {
   pathname: string;
 }
 
-function NavItem({ disabled, external, href, icon, label, matcher, pathname, title }: NavItemProps): React.JSX.Element {
-  const active = isNavItemActive({ disabled, external, href, matcher, pathname });
+function NavItem({ ativoEm, disabled, external, href, icon, label, matcher, pathname, title }: NavItemProps): React.JSX.Element {
+  const active = isNavItemActive({ ativoEm, disabled, external, href, matcher, pathname });
   const Icon = icon ? navIcons[icon] : null;
 
   return (

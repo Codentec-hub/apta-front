@@ -219,8 +219,8 @@ export function SiegNotasTab({ podeAcionar, documentoInicial }: Props): React.JS
 			(e) => !termo || e.nome.toLowerCase().includes(termo) || (dig && e.documento.includes(dig))
 		);
 	}, [contagens, busca]);
-	const pag = usePaginacao(linhas, 25);
-	const pagNotas = usePaginacao(notas?.notas ?? [], 25);
+	const pag = usePaginacao(linhas, 10);
+	const pagNotas = usePaginacao(notas?.notas ?? [], 10);
 
 	const contagemSelecionada = empresa ? contagens?.empresas.find((e) => e.documento === empresa.documento) : null;
 	const esperado = contagemSelecionada?.[papel === "emitente" ? "emitidas" : "recebidas"]?.[tipo] ?? null;
@@ -375,7 +375,7 @@ export function SiegNotasTab({ podeAcionar, documentoInicial }: Props): React.JS
 										})
 									}
 								>
-									{capturando ? "Buscando na SIEG…" : notas?.busca ? "Buscar de novo na SIEG" : "Buscar notas na SIEG"}
+									{capturando ? "Atualizando…" : "Atualizar notas"}
 								</Button>
 							) : null}
 							<Typography variant="body2" color="text.secondary">
@@ -469,7 +469,7 @@ export function SiegNotasTab({ podeAcionar, documentoInicial }: Props): React.JS
 												<Typography color="text.secondary" variant="body2" sx={{ py: 2, textAlign: "center" }}>
 													{notas === null
 														? "Carregando…"
-														: "Nenhuma nota guardada para este filtro. Clique em “Buscar notas na SIEG”."}
+														: "Nenhuma nota guardada para este filtro. Clique em “Atualizar notas”."}
 												</Typography>
 											</TableCell>
 										</TableRow>
@@ -487,7 +487,7 @@ export function SiegNotasTab({ podeAcionar, documentoInicial }: Props): React.JS
 									count={notas.notas.length}
 									page={pagNotas.pagina}
 									rowsPerPage={pagNotas.linhasPorPagina}
-									rowsPerPageOptions={[25, 50, 100]}
+									rowsPerPageOptions={[10, 25, 50, 100]}
 									onPageChange={pagNotas.aoMudarPagina}
 									onRowsPerPageChange={pagNotas.aoMudarLinhasPorPagina}
 									labelRowsPerPage="Linhas"
@@ -545,7 +545,7 @@ export function SiegNotasTab({ podeAcionar, documentoInicial }: Props): React.JS
 											{e.atualizadoEm ? dayjs(e.atualizadoEm).format("DD/MM HH:mm") : "—"}
 										</TableCell>
 										<TableCell align="right">
-											<Button size="small" onClick={() => setEmpresa(e)}>
+											<Button size="small" variant="contained" onClick={() => setEmpresa(e)}>
 												Ver notas
 											</Button>
 										</TableCell>
@@ -570,7 +570,7 @@ export function SiegNotasTab({ podeAcionar, documentoInicial }: Props): React.JS
 						count={linhas.length}
 						page={pag.pagina}
 						rowsPerPage={pag.linhasPorPagina}
-						rowsPerPageOptions={[25, 50, 100]}
+						rowsPerPageOptions={[10, 25, 50, 100]}
 						onPageChange={pag.aoMudarPagina}
 						onRowsPerPageChange={pag.aoMudarLinhasPorPagina}
 						labelRowsPerPage="Linhas por página"

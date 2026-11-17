@@ -91,6 +91,12 @@ const COR = {
   trilho: 'var(--mui-palette-neutral-100)',
 };
 
+/** "Terça-feira, 17 de novembro de 2026" */
+function dataPorExtenso(): string {
+  const t = dayjs().format('dddd, D [de] MMMM [de] YYYY');
+  return t.charAt(0).toUpperCase() + t.slice(1);
+}
+
 function saudacao(): string {
   const h = dayjs().hour();
   if (h < 12) return 'Bom dia';
@@ -257,11 +263,11 @@ function Agenda({ itens, escopo }: { itens: ItemAgenda[]; escopo: DadosPainel['e
 function VencimentosPorDia({ dias, hoje }: { dias: DadosPainel['porDia']; hoje: string }): React.JSX.Element {
   const max = Math.max(1, ...dias.map((d) => d.total));
   return (
-    <Card sx={{ height: '100%' }}>
+    <Card>
       <CardHeader title="Vencimentos" subheader="Entregas em aberto nos próximos 14 dias" />
       <Divider />
       <CardContent>
-        <Stack direction="row" spacing={0.75} sx={{ alignItems: 'flex-end', height: 150 }}>
+        <Stack direction="row" spacing={0.75} sx={{ alignItems: 'flex-end', height: 160 }}>
           {dias.map((d) => {
             const fimDeSemana = [0, 6].includes(dayjs(d.dia).day());
             return (
@@ -325,11 +331,12 @@ function EntregasPorSemana({ semanas }: { semanas: DadosPainel['semanas'] }): Re
       <CardHeader
         title="Entregas por semana"
         subheader="Últimas 8 semanas"
-        action={<Legenda itens={[{ cor: COR.ok, rotulo: 'No prazo' }, { cor: COR.atraso, rotulo: 'Com atraso' }]} />}
-        sx={{ '& .MuiCardHeader-action': { alignSelf: 'center', m: 0 } }}
       />
       <Divider />
       <CardContent>
+        <Box sx={{ mb: 2 }}>
+          <Legenda itens={[{ cor: COR.ok, rotulo: 'No prazo' }, { cor: COR.atraso, rotulo: 'Com atraso' }]} />
+        </Box>
         {total === 0 ? (
           <Typography variant="body2" color="text.secondary" sx={{ py: 6, textAlign: 'center' }}>
             Ainda não há entregas concluídas nessas semanas.
@@ -381,7 +388,10 @@ function CumprimentoPorSetor({ setores }: { setores: DadosPainel['porSetor'] }):
       <CardHeader
         title="Prazos do mês por setor"
         subheader="Vencimentos deste mês"
-        action={
+      />
+      <Divider />
+      <CardContent>
+        <Box sx={{ mb: 2 }}>
           <Legenda
             itens={[
               { cor: COR.ok, rotulo: 'No prazo' },
@@ -389,11 +399,7 @@ function CumprimentoPorSetor({ setores }: { setores: DadosPainel['porSetor'] }):
               { cor: COR.trilho, rotulo: 'A fazer' },
             ]}
           />
-        }
-        sx={{ '& .MuiCardHeader-action': { alignSelf: 'center', m: 0 } }}
-      />
-      <Divider />
-      <CardContent>
+        </Box>
         {setores.length === 0 ? (
           <Typography variant="body2" color="text.secondary" sx={{ py: 6, textAlign: 'center' }}>
             Nenhuma entrega vence neste mês.
@@ -441,7 +447,7 @@ function AtividadeRecente(): React.JSX.Element {
       .catch(() => setItens([]));
   }, []);
   return (
-    <Card sx={{ height: '100%' }}>
+    <Card>
       <CardHeader
         title="Atividade recente"
         action={
@@ -509,8 +515,8 @@ export function PainelInicial(): React.JSX.Element {
           <Typography variant="h4">
             {saudacao()}, {user?.nome?.split(' ')[0] ?? ''}
           </Typography>
-          <Typography color="text.secondary" variant="body2" sx={{ textTransform: 'capitalize' }}>
-            {dayjs().format('dddd, D [de] MMMM [de] YYYY')}
+          <Typography color="text.secondary" variant="body2">
+            {dataPorExtenso()}
           </Typography>
         </div>
         {gestao ? (
@@ -531,7 +537,7 @@ export function PainelInicial(): React.JSX.Element {
       <Grid container spacing={2.5}>
         {k ? (
           <>
-            <Grid size={{ xs: 12, sm: 6, lg: gestao ? 2.4 : 3 }}>
+            <Grid size={{ xs: 12, sm: 6, md: gestao ? 4 : 6, lg: gestao ? 2.4 : 3 }}>
               <Kpi
                 titulo="Atrasadas"
                 valor={k.vencidas}
@@ -541,7 +547,7 @@ export function PainelInicial(): React.JSX.Element {
                 href={paths.dashboard.obrigacoes}
               />
             </Grid>
-            <Grid size={{ xs: 12, sm: 6, lg: gestao ? 2.4 : 3 }}>
+            <Grid size={{ xs: 12, sm: 6, md: gestao ? 4 : 6, lg: gestao ? 2.4 : 3 }}>
               <Kpi
                 titulo="Vencem hoje"
                 valor={k.venceHoje}
@@ -551,7 +557,7 @@ export function PainelInicial(): React.JSX.Element {
                 href={paths.dashboard.obrigacoes}
               />
             </Grid>
-            <Grid size={{ xs: 12, sm: 6, lg: gestao ? 2.4 : 3 }}>
+            <Grid size={{ xs: 12, sm: 6, md: gestao ? 4 : 6, lg: gestao ? 2.4 : 3 }}>
               <Kpi
                 titulo="No prazo no mês"
                 valor={k.mes.percentualNoPrazo === null ? '—' : `${k.mes.percentualNoPrazo}%`}
@@ -560,7 +566,7 @@ export function PainelInicial(): React.JSX.Element {
                 cor={k.mes.percentualNoPrazo === null || k.mes.percentualNoPrazo >= 90 ? 'success' : k.mes.percentualNoPrazo >= 70 ? 'warning' : 'error'}
               />
             </Grid>
-            <Grid size={{ xs: 12, sm: 6, lg: gestao ? 2.4 : 3 }}>
+            <Grid size={{ xs: 12, sm: 6, md: gestao ? 4 : 6, lg: gestao ? 2.4 : 3 }}>
               <Kpi
                 titulo="Guias não lidas"
                 valor={k.guiasNaoLidas}
@@ -571,7 +577,7 @@ export function PainelInicial(): React.JSX.Element {
               />
             </Grid>
             {gestao ? (
-              <Grid size={{ xs: 12, sm: 12, lg: 2.4 }}>
+              <Grid size={{ xs: 12, sm: 12, md: 8, lg: 2.4 }}>
                 <Kpi
                   titulo="Clientes ativos"
                   valor={k.clientesAtivos}
@@ -619,7 +625,7 @@ export function PainelInicial(): React.JSX.Element {
           {dados ? <Agenda itens={dados.agenda} escopo={dados.escopo} /> : <Skeleton variant="rounded" height={360} />}
         </Grid>
         <Grid size={{ xs: 12, lg: 5 }}>
-          <Stack spacing={2.5} sx={{ height: '100%' }}>
+          <Stack spacing={2.5}>
             {dados ? <VencimentosPorDia dias={dados.porDia} hoje={dados.hoje} /> : <Skeleton variant="rounded" height={220} />}
             {gestao ? <AtividadeRecente /> : null}
           </Stack>

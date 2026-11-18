@@ -1,7 +1,6 @@
 'use client';
 
 import * as React from 'react';
-import Avatar from '@mui/material/Avatar';
 import Box from '@mui/material/Box';
 import IconButton from '@mui/material/IconButton';
 import Stack from '@mui/material/Stack';
@@ -14,17 +13,8 @@ import { useUser } from '@/hooks/use-user';
 import { MobileNav } from './mobile-nav';
 import { SinoNotificacoes } from '@/components/dashboard/notificacoes/sino-notificacoes';
 
+import { AvatarUsuario } from './avatar-usuario';
 import { UserPopover } from './user-popover';
-
-function iniciais(nome?: string): string {
-  if (!nome) {
-    return '?';
-  }
-  const partes = nome.trim().split(/\s+/);
-  const primeira = partes[0]?.[0] ?? '';
-  const ultima = partes.length > 1 ? partes.at(-1)?.[0] ?? '' : '';
-  return `${primeira}${ultima}`.toUpperCase();
-}
 
 export function MainNav(): React.JSX.Element {
   const [openNav, setOpenNav] = React.useState<boolean>(false);
@@ -70,7 +60,7 @@ export function MainNav(): React.JSX.Element {
             <Typography sx={{ display: { xs: 'none', sm: 'block' } }} variant="body2">
               {user?.nome}
             </Typography>
-            <Avatar sx={{ bgcolor: 'var(--mui-palette-primary-main)' }}>{iniciais(user?.nome)}</Avatar>
+            <AvatarUsuario usuario={user} />
           </Stack>
         </Stack>
       </Box>

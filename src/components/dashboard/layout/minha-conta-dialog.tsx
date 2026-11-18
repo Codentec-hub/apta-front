@@ -15,6 +15,9 @@ import Typography from '@mui/material/Typography';
 import { api } from '@/lib/api';
 import { useUser } from '@/hooks/use-user';
 
+import { AvatarUsuario } from './avatar-usuario';
+import { prepararFoto } from './preparar-foto';
+
 const PERFIL: Record<string, string> = { ADMIN: 'Administrador', GESTOR: 'Gestor', OPERACIONAL: 'Operacional' };
 
 export function MinhaContaDialog({ open, onClose }: { open: boolean; onClose: () => void }): React.JSX.Element {
@@ -26,6 +29,41 @@ export function MinhaContaDialog({ open, onClose }: { open: boolean; onClose: ()
   const [erro, setErro] = React.useState<string | null>(null);
   const [ok, setOk] = React.useState<string | null>(null);
   const [salvando, setSalvando] = React.useState(false);
+  const [enviandoFoto, setEnviandoFoto] = React.useState(false);
+  const arquivo = React.useRef<HTMLInputElement>(null);
+
+  async function escolherFoto(f: File | undefined): Promise<void> {
+    if (!f) return;
+    setErro(null);
+    setOk(null);
+    setEnviandoFoto(true);
+    try {
+      const imagem = await prepararFoto(f);
+      await api('/auth/me/foto', { method: 'PUT', body: JSON.stringify({ imagem }) });
+      await checkSession?.();
+      setOk('Foto atualizada.');
+    } catch (error) {
+      setErro(error instanceof Error ? error.message : 'Não foi possível enviar a foto');
+    } finally {
+      setEnviandoFoto(false);
+      if (arquivo.current) arquivo.current.value = '';
+    }
+  }
+
+  async function removerFoto(): Promise<void> {
+    setErro(null);
+    setOk(null);
+    setEnviandoFoto(true);
+    try {
+      await api('/auth/me/foto', { method: 'DELETE' });
+      await checkSession?.();
+      setOk('Foto removida.');
+    } catch (error) {
+      setErro(error instanceof Error ? error.message : 'Não foi possível remover a foto');
+    } finally {
+      setEnviandoFoto(false);
+    }
+  }
 
   React.useEffect(() => {
     if (!open) return;
@@ -81,6 +119,31 @@ export function MinhaContaDialog({ open, onClose }: { open: boolean; onClose: ()
       <DialogTitle>Minha conta</DialogTitle>
       <DialogContent>
         <Stack spacing={2} sx={{ pt: 1 }}>
+          <Stack direction="row" spacing={2} sx={{ alignItems: 'center' }}>
+            <AvatarUsuario usuario={user} tamanho={72} />
+            <Stack spacing={0.5}>
+              <Stack direction="row" spacing={1}>
+                <Button size="small" variant="outlined" disabled={enviandoFoto} onClick={() => arquivo.current?.click()}>
+                  {enviandoFoto ? 'Enviando…' : user?.fotoEm ? 'Trocar foto' : 'Enviar foto'}
+                </Button>
+                {user?.fotoEm ? (
+                  <Button size="small" color="secondary" disabled={enviandoFoto} onClick={() => void removerFoto()}>
+                    Remover
+                  </Button>
+                ) : null}
+              </Stack>
+              <Typography variant="caption" color="text.secondary">
+                JPG, PNG ou WebP. A imagem é cortada em quadrado.
+              </Typography>
+            </Stack>
+            <input
+              ref={arquivo}
+              type="file"
+              accept="image/jpeg,image/png,image/webp"
+              hidden
+              onChange={(e) => void escolherFoto(e.target.files?.[0])}
+            />
+          </Stack>
           <TextField label="Nome" value={nome} onChange={(e) => setNome(e.target.value)} fullWidth />
           <TextField
             label="E-mail"

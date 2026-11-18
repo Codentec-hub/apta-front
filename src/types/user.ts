@@ -6,4 +6,5 @@ export interface User {
   email: string;
   perfil: Perfil;
   setor: { id: string; nome: string } | null;
+  fotoEm?: string | null;
 }

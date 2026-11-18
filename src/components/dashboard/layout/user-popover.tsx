@@ -14,6 +14,7 @@ import { authClient } from '@/lib/auth/client';
 import { logger } from '@/lib/default-logger';
 import { useUser } from '@/hooks/use-user';
 
+import { AvatarUsuario } from './avatar-usuario';
 import { MinhaContaDialog } from './minha-conta-dialog';
 
 const NOME_PERFIL: Record<string, string> = { ADMIN: 'Administrador', GESTOR: 'Gestor', OPERACIONAL: 'Operacional' };
@@ -57,16 +58,21 @@ export function UserPopover({ anchorEl, onClose, open }: UserPopoverProps): Reac
         transformOrigin={{ horizontal: 'right', vertical: 'top' }}
         slotProps={{ paper: { sx: { width: '240px' } } }}
       >
-        <Box sx={{ p: '16px 20px ' }}>
-          <Typography variant="subtitle1">{user?.nome}</Typography>
-          <Typography color="text.secondary" variant="body2">
-            {user?.email}
-          </Typography>
-          {user?.setor ? (
-            <Typography color="text.secondary" variant="caption">
-              {user.setor.nome} · {NOME_PERFIL[user.perfil] ?? user.perfil}
+        <Box sx={{ p: '16px 20px ', display: 'flex', gap: 1.5, alignItems: 'center' }}>
+          <AvatarUsuario usuario={user} tamanho={44} />
+          <Box sx={{ minWidth: 0 }}>
+            <Typography variant="subtitle1" noWrap>
+              {user?.nome}
             </Typography>
-          ) : null}
+            <Typography color="text.secondary" variant="body2" noWrap>
+              {user?.email}
+            </Typography>
+            {user?.setor ? (
+              <Typography color="text.secondary" variant="caption">
+                {user.setor.nome} · {NOME_PERFIL[user.perfil] ?? user.perfil}
+              </Typography>
+            ) : null}
+          </Box>
         </Box>
         <Divider />
         <MenuList disablePadding sx={{ p: '8px', '& .MuiMenuItem-root': { borderRadius: 1 } }}>

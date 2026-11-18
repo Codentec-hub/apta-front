@@ -21,6 +21,7 @@ import RouterLink from 'next/link';
 
 import { paths } from '@/paths';
 import { api } from '@/lib/api';
+import { formatarDocumento } from '@/lib/empresa';
 import { STATUS_AGENDAMENTO, STATUS_LEAD, horarioLongo, relativo, rotuloCampo, type CampoPerfil, type LeadDetalhe } from '@/lib/leads';
 import { formatarTelefone } from '@/components/dashboard/atendimento/util';
 
@@ -89,7 +90,13 @@ export function LeadDetalheDrawer({ leadId, campos, versao, podeExcluir, enviarC
   }
 
   async function descartar(): Promise<void> {
-    const motivo = globalThis.prompt('Motivo do descarte (opcional):', '');
+    const confirmado = lead?.agendamentos.some((a) => a.status === 'CONFIRMADO' && new Date(a.inicio) > new Date());
+    const motivo = globalThis.prompt(
+      confirmado
+        ? 'Este lead tem um horário CONFIRMADO, que será cancelado e liberado na agenda. Motivo do descarte (opcional):'
+        : 'Motivo do descarte (opcional):',
+      ''
+    );
     if (motivo === null) return;
     await acao('descartar', 'Lead descartado.', { motivo: motivo || undefined });
   }
@@ -117,7 +124,11 @@ export function LeadDetalheDrawer({ leadId, campos, versao, podeExcluir, enviarC
           <Box>
             <Typography variant="h5">{lead?.nome ?? '…'}</Typography>
             <Typography variant="body2" color="text.secondary">
-              {lead ? [formatarTelefone(lead.telefone), lead.email, lead.origem].filter(Boolean).join(' · ') : ''}
+              {lead
+                ? [formatarTelefone(lead.telefone), lead.cnpj ? `CNPJ ${formatarDocumento(lead.cnpj)}` : null, lead.email, lead.origem]
+                    .filter(Boolean)
+                    .join(' · ')
+                : ''}
             </Typography>
           </Box>
           <IconButton onClick={onClose} aria-label="Fechar">
@@ -164,7 +175,10 @@ export function LeadDetalheDrawer({ leadId, campos, versao, podeExcluir, enviarC
                   Abrir conversa
                 </Button>
               ) : null}
-              {lead.conversaId && (!comAssistente || ENCERRADOS.has(lead.status)) ? (
+              {lead.conversaId &&
+              lead.status !== 'NOVO' &&
+              lead.status !== 'NA_FILA' &&
+              (!comAssistente || ENCERRADOS.has(lead.status)) ? (
                 <Button variant="outlined" startIcon={<RobotIcon />} disabled={ocupado} onClick={() => void acao('reabrir', 'Conversa devolvida ao assistente.')}>
                   Devolver ao assistente
                 </Button>

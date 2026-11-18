@@ -26,6 +26,7 @@ export interface Lead {
   nome: string;
   telefone: string;
   email: string | null;
+  cnpj: string | null;
   origem: string | null;
   observacoes: string | null;
   qualificacao: string | null;
@@ -136,4 +137,14 @@ export function relativo(iso: string): string {
 
 export function rotuloCampo(campos: CampoPerfil[], chave: string): string {
   return campos.find((c) => c.chave === chave)?.rotulo ?? chave;
+}
+
+/** Duplicidade encontrada ao cadastrar: telefone de outro lead bloqueia; o resto pede confirmação. */
+export interface AvisoDuplicidade {
+  tipo: 'lead_telefone' | 'lead_cnpj' | 'lead_email' | 'cliente_cnpj' | 'contato_cliente' | 'conversa';
+  bloqueia: boolean;
+  mensagem: string;
+  leadId?: string;
+  clienteId?: string;
+  conversaId?: string;
 }

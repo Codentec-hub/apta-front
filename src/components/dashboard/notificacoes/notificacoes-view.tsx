@@ -28,6 +28,7 @@ import { useEventos } from '@/lib/eventos';
 import type { Notificacao, PaginaNotificacoes, PreferenciaTipo } from '@/lib/notificacoes';
 
 import { ItemNotificacao } from './item-notificacao';
+import { NesteNavegador } from './neste-navegador';
 
 type Filtro = 'nao_lidas' | 'todas' | 'arquivadas';
 
@@ -254,6 +255,7 @@ function Preferencias(): React.JSX.Element {
 
   return (
     <Stack spacing={2}>
+      <NesteNavegador />
       {emailDisponivel ? null : (
         <Alert severity="info">
           O envio de e-mails ainda não está ligado no servidor. Você já pode escolher o que quer receber por e-mail: vale assim

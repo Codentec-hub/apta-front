@@ -3,14 +3,12 @@
 import * as React from 'react';
 import RouterLink from 'next/link';
 import { useRouter } from 'next/navigation';
-import Alert from '@mui/material/Alert';
 import Badge from '@mui/material/Badge';
 import Box from '@mui/material/Box';
 import Button from '@mui/material/Button';
 import Divider from '@mui/material/Divider';
 import IconButton from '@mui/material/IconButton';
 import Popover from '@mui/material/Popover';
-import Snackbar from '@mui/material/Snackbar';
 import Stack from '@mui/material/Stack';
 import Tab from '@mui/material/Tab';
 import Tabs from '@mui/material/Tabs';
@@ -19,13 +17,24 @@ import Typography from '@mui/material/Typography';
 import { BellIcon } from '@phosphor-icons/react/dist/ssr/Bell';
 import { BellSlashIcon } from '@phosphor-icons/react/dist/ssr/BellSlash';
 import { GearSixIcon } from '@phosphor-icons/react/dist/ssr/GearSix';
+import { SpeakerHighIcon } from '@phosphor-icons/react/dist/ssr/SpeakerHigh';
+import { SpeakerSlashIcon } from '@phosphor-icons/react/dist/ssr/SpeakerSlash';
 
 import { api } from '@/lib/api';
+import {
+  notificarNavegador,
+  prepararSom,
+  reivindicar,
+  salvarPreferenciasAviso,
+  tocarSom,
+  usePreferenciasAviso,
+} from '@/lib/avisos-locais';
 import { useEventos } from '@/lib/eventos';
 import type { Notificacao, PaginaNotificacoes } from '@/lib/notificacoes';
 import { paths } from '@/paths';
 
 import { ItemNotificacao } from './item-notificacao';
+import { MAX_TOASTS, ToastsNotificacoes } from './toasts-notificacoes';
 
 /** Sino do topo: contador em tempo real, lista rápida e aviso de notificação nova. */
 export function SinoNotificacoes(): React.JSX.Element {
@@ -35,27 +44,55 @@ export function SinoNotificacoes(): React.JSX.Element {
   const [aba, setAba] = React.useState<'nao_lidas' | 'todas'>('nao_lidas');
   const [naoLidas, setNaoLidas] = React.useState(0);
   const [itens, setItens] = React.useState<Notificacao[] | null>(null);
-  const [nova, setNova] = React.useState<Notificacao | null>(null);
-  const ultimaVista = React.useRef<string | null>(null);
+  const prefs = usePreferenciasAviso();
+  const prefsRef = React.useRef(prefs);
+  prefsRef.current = prefs;
+  // Avisos na tela: os primeiros MAX_TOASTS aparecem, o resto espera a vez.
+  const [toasts, setToasts] = React.useState<Notificacao[]>([]);
+  // IDs já conhecidos: só o que é realmente novo vira aviso (nada de reavisar ao reconectar).
+  const conhecidas = React.useRef<Set<string> | null>(null);
 
-  const carregar = React.useCallback(
-    async (avisarNova = false) => {
-      try {
-        const r = await api<PaginaNotificacoes>(`/notificacoes?filtro=${aba}&porPagina=8`);
-        setNaoLidas(r.naoLidas);
-        setItens(r.itens);
-        // Aviso flutuante só para a notificação nova (não lida) que acabou de chegar.
-        const recente = r.itens.find((i) => !i.lidaEm);
-        if (avisarNova && recente && recente.id !== ultimaVista.current && dayjsRecente(recente.criadoEm)) {
-          setNova(recente);
-        }
-        if (recente) ultimaVista.current = recente.id;
-      } catch {
-        // sem rede: tenta de novo no próximo evento/intervalo
+  const carregar = React.useCallback(async () => {
+    try {
+      const r = await api<PaginaNotificacoes>(`/notificacoes?filtro=${aba}&porPagina=8`);
+      setNaoLidas(r.naoLidas);
+      setItens(r.itens);
+    } catch {
+      // sem rede: tenta de novo no próximo evento/intervalo
+    }
+  }, [aba]);
+
+  const verNovas = React.useCallback(async () => {
+    try {
+      const r = await api<PaginaNotificacoes>('/notificacoes?filtro=nao_lidas&porPagina=15');
+      const vistas = conhecidas.current;
+      conhecidas.current = new Set([...(vistas ?? []), ...r.itens.map((i) => i.id)]);
+      if (!vistas) return; // primeira carga: só registra o que já existia
+      const novas = r.itens.filter((i) => !vistas.has(i.id) && recente(i.criadoEm)); // mais nova primeiro
+      if (novas.length === 0) return;
+      const p = prefsRef.current;
+      if (p.toast) setToasts((t) => [...novas, ...t.filter((x) => !novas.some((n) => n.id === x.id))]);
+      const maisGrave = novas.reduce((a, b) => (PESO[b.severidade] > PESO[a.severidade] ? b : a));
+      if (!reivindicar(maisGrave.id)) return; // outra aba já avisou
+      if (p.som) tocarSom(maisGrave.severidade, p.volume);
+      if (p.navegador && document.hidden) {
+        const ultima = novas[0];
+        notificarNavegador(
+          novas.length > 1 ? `${novas.length} notificações novas` : ultima.titulo,
+          novas.length > 1 ? novas.map((n) => n.titulo).join('\n') : ultima.mensagem,
+          () => router.push(novas.length > 1 ? paths.dashboard.notificacoes : (ultima.href ?? paths.dashboard.notificacoes)),
+          `apta-${ultima.id}`
+        );
       }
-    },
-    [aba]
-  );
+    } catch {
+      // sem rede
+    }
+  }, [router]);
+
+  React.useEffect(() => {
+    void verNovas();
+    return prepararSom();
+  }, [verNovas]);
 
   React.useEffect(() => {
     void carregar();
@@ -63,12 +100,18 @@ export function SinoNotificacoes(): React.JSX.Element {
 
   // Tempo real (SSE) + segurança a cada 2 min caso a conexão caia.
   useEventos((evento) => {
-    if (evento.tipo === 'notificacao') void carregar(true);
+    if (evento.tipo === 'notificacao') {
+      void carregar();
+      void verNovas();
+    }
   });
   React.useEffect(() => {
-    const t = setInterval(() => void carregar(), 120_000);
+    const t = setInterval(() => {
+      void carregar();
+      void verNovas();
+    }, 120_000);
     return () => clearInterval(t);
-  }, [carregar]);
+  }, [carregar, verNovas]);
 
   // Contador no título da aba do navegador.
   React.useEffect(() => {
@@ -76,14 +119,20 @@ export function SinoNotificacoes(): React.JSX.Element {
     document.title = naoLidas > 0 ? `(${naoLidas > 99 ? '99+' : naoLidas}) ${limpo}` : limpo;
   }, [naoLidas, itens]);
 
-  async function abrir(n: Notificacao): Promise<void> {
-    if (!n.lidaEm) {
-      setItens((l) => l?.map((i) => (i.id === n.id ? { ...i, lidaEm: new Date().toISOString() } : i)) ?? l);
-      setNaoLidas((c) => Math.max(0, c - 1));
-      void api('/notificacoes/lidas', { method: 'POST', body: JSON.stringify({ ids: [n.id] }) }).catch(() => {});
-    }
+  const lidas = React.useRef(new Set<string>());
+
+  function marcarLida(n: Notificacao): void {
+    setToasts((t) => t.filter((x) => x.id !== n.id));
+    if (n.lidaEm || lidas.current.has(n.id)) return;
+    lidas.current.add(n.id);
+    setItens((l) => l?.map((i) => (i.id === n.id ? { ...i, lidaEm: new Date().toISOString() } : i)) ?? l);
+    setNaoLidas((c) => Math.max(0, c - 1));
+    void api('/notificacoes/lidas', { method: 'POST', body: JSON.stringify({ ids: [n.id] }) }).catch(() => {});
+  }
+
+  function abrir(n: Notificacao): void {
+    marcarLida(n);
     setAberto(false);
-    setNova(null);
     router.push(n.href ?? paths.dashboard.notificacoes);
   }
 
@@ -124,6 +173,18 @@ export function SinoNotificacoes(): React.JSX.Element {
                 Marcar todas como lidas
               </Button>
             ) : null}
+            <Tooltip title={prefs.som ? 'Som ligado (clique para silenciar)' : 'Som desligado (clique para ligar)'}>
+              <IconButton
+                size="small"
+                aria-label={prefs.som ? 'Silenciar som das notificações' : 'Ligar som das notificações'}
+                onClick={() => {
+                  salvarPreferenciasAviso({ som: !prefs.som });
+                  if (!prefs.som) tocarSom('info', prefs.volume);
+                }}
+              >
+                {prefs.som ? <SpeakerHighIcon /> : <SpeakerSlashIcon />}
+              </IconButton>
+            </Tooltip>
             <Tooltip title="Preferências">
               <IconButton
                 size="small"
@@ -149,7 +210,7 @@ export function SinoNotificacoes(): React.JSX.Element {
             </Stack>
           ) : (
             (itens ?? []).map((n) => (
-              <ItemNotificacao key={n.id} n={n} compacto onAbrir={(x) => void abrir(x)} onArquivar={(x) => void arquivar(x)} />
+              <ItemNotificacao key={n.id} n={n} compacto onAbrir={abrir} onArquivar={(x) => void arquivar(x)} />
             ))
           )}
         </Box>
@@ -161,30 +222,25 @@ export function SinoNotificacoes(): React.JSX.Element {
         </Box>
       </Popover>
 
-      <Snackbar
-        open={Boolean(nova)}
-        autoHideDuration={8000}
-        onClose={() => setNova(null)}
-        anchorOrigin={{ vertical: 'bottom', horizontal: 'right' }}
-      >
-        <Alert
-          severity={nova?.severidade === 'erro' ? 'error' : nova?.severidade === 'aviso' ? 'warning' : nova?.severidade === 'sucesso' ? 'success' : 'info'}
-          variant="filled"
-          onClose={() => setNova(null)}
-          sx={{ cursor: 'pointer', maxWidth: 420 }}
-          onClick={() => nova && void abrir(nova)}
-        >
-          <strong>{nova?.titulo}</strong>
-          <Typography variant="body2" sx={{ display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical', overflow: 'hidden' }}>
-            {nova?.mensagem}
-          </Typography>
-        </Alert>
-      </Snackbar>
+      <ToastsNotificacoes
+        itens={toasts.slice(0, MAX_TOASTS)}
+        extras={Math.max(0, toasts.length - MAX_TOASTS)}
+        onAbrir={abrir}
+        onLida={marcarLida}
+        onFechar={(id) => setToasts((t) => t.filter((x) => x.id !== id))}
+        onFecharTodos={() => setToasts([])}
+        onVerTodas={() => {
+          setToasts([]);
+          router.push(paths.dashboard.notificacoes);
+        }}
+      />
     </>
   );
 }
 
-/** Criada no último minuto (para não estourar aviso de coisa antiga ao reconectar). */
-function dayjsRecente(data: string): boolean {
-  return Date.now() - new Date(data).getTime() < 60_000;
+/** Criada nos últimos 3 min (não estoura aviso de coisa antiga ao reconectar). */
+function recente(data: string): boolean {
+  return Date.now() - new Date(data).getTime() < 180_000;
 }
+
+const PESO: Record<Notificacao['severidade'], number> = { info: 0, sucesso: 1, aviso: 2, erro: 3 };

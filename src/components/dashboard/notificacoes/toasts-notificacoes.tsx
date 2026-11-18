@@ -9,6 +9,7 @@ import Slide from '@mui/material/Slide';
 import Stack from '@mui/material/Stack';
 import Typography from '@mui/material/Typography';
 import type { Icon } from '@phosphor-icons/react/dist/lib/types';
+import { ChatCircleTextIcon } from '@phosphor-icons/react/dist/ssr/ChatCircleText';
 import { CheckCircleIcon } from '@phosphor-icons/react/dist/ssr/CheckCircle';
 import { InfoIcon } from '@phosphor-icons/react/dist/ssr/Info';
 import { WarningIcon } from '@phosphor-icons/react/dist/ssr/Warning';
@@ -28,8 +29,13 @@ const ICONE: Record<SeveridadeNotificacao, Icon> = {
 const DURACAO: Record<SeveridadeNotificacao, number> = { info: 7000, sucesso: 6000, aviso: 10_000, erro: 14_000 };
 export const MAX_TOASTS = 3;
 
+/** Item da pilha: uma notificação ou a mensagem nova de um cliente (agrupada por conversa). */
+export type AvisoTela = Notificacao & {
+  mensagemCliente?: { conversaId: string; quantidade: number; chave: string };
+};
+
 interface Props {
-  itens: Notificacao[];
+  itens: AvisoTela[];
   extras: number; // quantas chegaram além das visíveis
   onAbrir: (n: Notificacao) => void;
   onLida: (n: Notificacao) => void;
@@ -68,7 +74,7 @@ export function ToastsNotificacoes({ itens, extras, onAbrir, onLida, onFechar, o
         </Stack>
       ) : null}
       {itens.map((n) => (
-        <Toast key={n.id} n={n} onAbrir={onAbrir} onLida={onLida} onFechar={onFechar} />
+        <Toast key={n.mensagemCliente?.chave ?? n.id} n={n} onAbrir={onAbrir} onLida={onLida} onFechar={onFechar} />
       ))}
     </Stack>
   );
@@ -80,14 +86,15 @@ function Toast({
   onLida,
   onFechar,
 }: {
-  n: Notificacao;
+  n: AvisoTela;
   onAbrir: (n: Notificacao) => void;
   onLida: (n: Notificacao) => void;
   onFechar: (id: string) => void;
 }): React.JSX.Element {
-  const Icone = ICONE[n.severidade] ?? InfoIcon;
-  const cor = COR_SEVERIDADE[n.severidade];
-  const duracao = DURACAO[n.severidade] ?? 7000;
+  const msg = n.mensagemCliente;
+  const Icone = msg ? ChatCircleTextIcon : (ICONE[n.severidade] ?? InfoIcon);
+  const cor = msg ? 'var(--mui-palette-success-main)' : COR_SEVERIDADE[n.severidade];
+  const duracao = msg ? 9000 : (DURACAO[n.severidade] ?? 7000);
   const [visivel, setVisivel] = React.useState(true);
   const [pausado, setPausado] = React.useState(false);
   const restante = React.useRef(duracao);
@@ -139,6 +146,11 @@ function Toast({
               <Typography variant="caption" color="text.secondary" sx={{ flexShrink: 0 }}>
                 · {quando(n.criadoEm)}
               </Typography>
+              {msg && msg.quantidade > 1 ? (
+                <Typography variant="caption" sx={{ color: cor, fontWeight: 700, flexShrink: 0 }}>
+                  · {msg.quantidade} mensagens
+                </Typography>
+              ) : null}
             </Stack>
             <Typography variant="subtitle2" sx={{ fontWeight: 700 }}>
               {n.titulo}
@@ -159,19 +171,21 @@ function Toast({
                   onAbrir(n);
                 }}
               >
-                {n.href ? 'Abrir' : 'Ver'}
+                {msg ? 'Responder' : n.href ? 'Abrir' : 'Ver'}
               </Button>
-              <Button
-                size="small"
-                color="secondary"
-                onClick={(e) => {
-                  e.stopPropagation();
-                  onLida(n);
-                  fechar();
-                }}
-              >
-                Marcar como lida
-              </Button>
+              {msg ? null : (
+                <Button
+                  size="small"
+                  color="secondary"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    onLida(n);
+                    fechar();
+                  }}
+                >
+                  Marcar como lida
+                </Button>
+              )}
             </Stack>
           </Box>
           <IconButton

@@ -8,10 +8,32 @@ export interface PreferenciasAviso {
   som: boolean;
   volume: number; // 0 a 1
   navegador: boolean; // notificação do sistema operacional quando a aba está em segundo plano
+  // Mensagens de clientes (WhatsApp do atendimento)
+  mensagens: boolean;
+  mensagensDe: QuaisMensagens;
+  mensagensComAssistente: boolean; // também as conversas que o assistente de IA está respondendo
+  somMensagens: boolean;
 }
 
+export type QuaisMensagens = 'todas' | 'minhas_e_livres' | 'minhas';
+
+export const QUAIS_MENSAGENS: Record<QuaisMensagens, string> = {
+  todas: 'De todas as conversas',
+  minhas_e_livres: 'Das conversas comigo ou sem responsável',
+  minhas: 'Só das conversas comigo',
+};
+
 const CHAVE = 'apta:avisos';
-const PADRAO: PreferenciasAviso = { toast: true, som: true, volume: 0.6, navegador: false };
+const PADRAO: PreferenciasAviso = {
+  toast: true,
+  som: true,
+  volume: 0.6,
+  navegador: false,
+  mensagens: true,
+  mensagensDe: 'minhas_e_livres',
+  mensagensComAssistente: false,
+  somMensagens: true,
+};
 const ouvintes = new Set<() => void>();
 let cache: PreferenciasAviso | null = null;
 
@@ -88,18 +110,21 @@ export function prepararSom(): () => void {
 }
 
 // Notas (Hz) de cada aviso: info/sucesso sobe suave, aviso desce, erro repete.
-const NOTAS: Record<SeveridadeNotificacao, number[]> = {
+export type TipoSom = SeveridadeNotificacao | 'mensagem';
+
+const NOTAS: Record<TipoSom, number[]> = {
+  mensagem: [1174.7, 1568],
   info: [880, 1318.5],
   sucesso: [784, 1046.5, 1318.5],
   aviso: [1046.5, 784],
   erro: [987.8, 740, 987.8, 740],
 };
 
-export function tocarSom(severidade: SeveridadeNotificacao = 'info', volume = preferenciasAviso().volume): void {
+export function tocarSom(severidade: TipoSom = 'info', volume = preferenciasAviso().volume): void {
   const ctx = audio();
   if (!ctx || volume <= 0) return;
   if (ctx.state === 'suspended') void ctx.resume().catch(() => {});
-  const passo = severidade === 'erro' ? 0.11 : 0.13;
+  const passo = severidade === 'erro' ? 0.11 : severidade === 'mensagem' ? 0.08 : 0.13;
   const inicio = ctx.currentTime + 0.02;
   for (const [i, freq] of NOTAS[severidade].entries()) {
     const t = inicio + i * passo;

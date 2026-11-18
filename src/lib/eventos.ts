@@ -7,7 +7,19 @@ import { getToken } from './api';
 export type EventoTempoReal =
   | { tipo: 'conversa'; conversaId: string }
   | { tipo: 'notificacao'; usuarioId: string }
-  | { tipo: 'leads' };
+  | { tipo: 'leads' }
+  | {
+      tipo: 'mensagem';
+      conversaId: string;
+      mensagemId: string;
+      nome: string;
+      cliente: string | null;
+      texto: string;
+      modo: string;
+      responsavelId: string | null;
+      setorId: string | null;
+      lead: boolean;
+    };
 
 // Escuta os eventos em tempo real do backend (SSE). O navegador reconecta
 // sozinho se a conexão cair.

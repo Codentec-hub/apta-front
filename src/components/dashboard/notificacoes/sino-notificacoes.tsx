@@ -29,12 +29,13 @@ import {
   tocarSom,
   usePreferenciasAviso,
 } from '@/lib/avisos-locais';
-import { useEventos } from '@/lib/eventos';
+import { useEventos, type EventoTempoReal } from '@/lib/eventos';
+import { useUser } from '@/hooks/use-user';
 import type { Notificacao, PaginaNotificacoes } from '@/lib/notificacoes';
 import { paths } from '@/paths';
 
 import { ItemNotificacao } from './item-notificacao';
-import { MAX_TOASTS, ToastsNotificacoes } from './toasts-notificacoes';
+import { MAX_TOASTS, ToastsNotificacoes, type AvisoTela } from './toasts-notificacoes';
 
 /** Sino do topo: contador em tempo real, lista rápida e aviso de notificação nova. */
 export function SinoNotificacoes(): React.JSX.Element {
@@ -48,7 +49,9 @@ export function SinoNotificacoes(): React.JSX.Element {
   const prefsRef = React.useRef(prefs);
   prefsRef.current = prefs;
   // Avisos na tela: os primeiros MAX_TOASTS aparecem, o resto espera a vez.
-  const [toasts, setToasts] = React.useState<Notificacao[]>([]);
+  const [toasts, setToasts] = React.useState<AvisoTela[]>([]);
+  const { user } = useUser();
+  const usuarioId = user?.id;
   // IDs já conhecidos: só o que é realmente novo vira aviso (nada de reavisar ao reconectar).
   const conhecidas = React.useRef<Set<string> | null>(null);
 
@@ -99,7 +102,54 @@ export function SinoNotificacoes(): React.JSX.Element {
   }, [carregar]);
 
   // Tempo real (SSE) + segurança a cada 2 min caso a conexão caia.
+  // Mensagem nova de cliente: filtra pelas preferências, agrupa por conversa.
+  const aoReceberMensagem = (e: Extract<EventoTempoReal, { tipo: 'mensagem' }>) => {
+    const p = prefsRef.current;
+    if (!p.mensagens || !usuarioId) return;
+    if (e.modo === 'AGENTE' && !p.mensagensComAssistente) return;
+    if (p.mensagensDe === 'minhas' && e.responsavelId !== usuarioId) return;
+    if (p.mensagensDe === 'minhas_e_livres' && e.responsavelId && e.responsavelId !== usuarioId) return;
+    // Conversa aberta na tela: a pessoa já está vendo, não avisa.
+    const aqui = globalThis.location;
+    const naConversa =
+      aqui.pathname.startsWith(paths.dashboard.atendimento) &&
+      new URLSearchParams(aqui.search).get('conversa') === e.conversaId;
+    if (naConversa && !document.hidden) return;
+
+    const id = `msg:${e.conversaId}`;
+    setToasts((t) => {
+      const anterior = t.find((x) => x.id === id);
+      const quantidade = (anterior?.mensagemCliente?.quantidade ?? 0) + 1;
+      const aviso: AvisoTela = {
+        id,
+        tipo: 'mensagem_cliente',
+        categoria: e.lead ? 'lead no WhatsApp' : 'mensagem de cliente',
+        severidade: 'info',
+        titulo: e.cliente && e.cliente !== e.nome ? `${e.nome} · ${e.cliente}` : e.nome,
+        mensagem: e.texto || '📎 Arquivo ou mídia',
+        href: `${paths.dashboard.atendimento}?conversa=${e.conversaId}`,
+        lidaEm: null,
+        arquivadaEm: null,
+        emailEnviadoEm: null,
+        criadoEm: new Date().toISOString(),
+        mensagemCliente: { conversaId: e.conversaId, quantidade, chave: e.mensagemId },
+      };
+      return p.toast ? [aviso, ...t.filter((x) => x.id !== id)] : t;
+    });
+    if (!reivindicar(e.mensagemId)) return; // outra aba já avisou
+    if (p.somMensagens) tocarSom('mensagem', p.volume);
+    if (p.navegador && document.hidden) {
+      notificarNavegador(
+        e.nome,
+        e.texto || 'Arquivo ou mídia',
+        () => router.push(`${paths.dashboard.atendimento}?conversa=${e.conversaId}`),
+        `apta-msg-${e.conversaId}`
+      );
+    }
+  };
+
   useEventos((evento) => {
+    if (evento.tipo === 'mensagem') aoReceberMensagem(evento);
     if (evento.tipo === 'notificacao') {
       void carregar();
       void verNovas();
@@ -121,16 +171,16 @@ export function SinoNotificacoes(): React.JSX.Element {
 
   const lidas = React.useRef(new Set<string>());
 
-  function marcarLida(n: Notificacao): void {
+  function marcarLida(n: AvisoTela): void {
     setToasts((t) => t.filter((x) => x.id !== n.id));
-    if (n.lidaEm || lidas.current.has(n.id)) return;
+    if (n.mensagemCliente || n.lidaEm || lidas.current.has(n.id)) return;
     lidas.current.add(n.id);
     setItens((l) => l?.map((i) => (i.id === n.id ? { ...i, lidaEm: new Date().toISOString() } : i)) ?? l);
     setNaoLidas((c) => Math.max(0, c - 1));
     void api('/notificacoes/lidas', { method: 'POST', body: JSON.stringify({ ids: [n.id] }) }).catch(() => {});
   }
 
-  function abrir(n: Notificacao): void {
+  function abrir(n: AvisoTela): void {
     marcarLida(n);
     setAberto(false);
     router.push(n.href ?? paths.dashboard.notificacoes);

@@ -22,7 +22,8 @@ import dayjs from 'dayjs';
 import type { AbaConversa, Conversa, Setor } from '@/types/domain';
 import { formatarCodigo } from '@/lib/empresa';
 
-import { ABAS, ehWhatsApp, formatarDuracao, horaCurta, iniciais, nomeCanal, tituloConversa } from './util';
+import { AvatarConversa } from './avatar-conversa';
+import { ABAS, ehWhatsApp, formatarDuracao, horaCurta, nomeCanal, tituloConversa } from './util';
 
 // Na fila há mais que isso, o tempo de espera aparece em vermelho.
 const ESPERA_ALERTA_MIN = 15;
@@ -145,16 +146,12 @@ export function ListaConversas(props: ListaConversasProps): React.JSX.Element {
                       </Avatar>
                     }
                   >
-                    <Avatar
-                      sx={{
-                        width: 40,
-                        height: 40,
-                        fontSize: 14,
-                        bgcolor: conversa.cliente ? 'primary.main' : 'grey.500',
-                      }}
-                    >
-                      {iniciais(titulo)}
-                    </Avatar>
+                    <AvatarConversa
+                      conversaId={conversa.id}
+                      fotoEm={conversa.fotoEm}
+                      titulo={titulo}
+                      cor={conversa.cliente ? 'primary.main' : 'grey.500'}
+                    />
                   </Badge>
                   <Box sx={{ flex: 1, minWidth: 0 }}>
                     <Stack direction="row" spacing={1} sx={{ alignItems: 'baseline' }}>

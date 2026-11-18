@@ -398,6 +398,8 @@ export interface Conversa {
   ultimaMensagemEm: string | null;
   ultimaMensagemTexto: string | null;
   ultimaEntradaEm: string | null;
+  // Versão da foto de perfil do WhatsApp guardada (nulo = sem foto).
+  fotoEm: string | null;
   clienteId: string | null;
   cliente: {
     id: string;

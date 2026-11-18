@@ -38,6 +38,7 @@ import { api } from '@/lib/api';
 import { formatarCodigo } from '@/lib/empresa';
 
 import { estiloFundoChat } from './fundo-chat';
+import { AvatarConversa } from './avatar-conversa';
 import { ehWhatsApp, formatarTelefone, nomeCanal, tituloConversa } from './util';
 
 const STATUS_LABEL = {
@@ -267,6 +268,12 @@ export function ChatConversa(props: ChatConversaProps): React.JSX.Element {
           <IconButton size="small" onClick={props.onVoltar} sx={{ display: { md: 'none' } }}>
             <ArrowLeftIcon />
           </IconButton>
+          <AvatarConversa
+            conversaId={conversa.id}
+            fotoEm={conversa.fotoEm}
+            titulo={tituloConversa(conversa)}
+            cor={conversa.cliente ? 'primary.main' : 'grey.500'}
+          />
           <Box sx={{ flex: 1, minWidth: 0 }}>
             <Typography variant="subtitle1" noWrap sx={{ fontWeight: 600 }}>
               {tituloConversa(conversa)}

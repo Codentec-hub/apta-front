@@ -55,12 +55,15 @@ export function ToastsNotificacoes({ itens, extras, onAbrir, onLida, onFechar, o
         zIndex: 'var(--mui-zIndex-snackbar)',
         right: { xs: 16, sm: 24 },
         left: { xs: 16, sm: 'auto' },
-        bottom: { xs: 16, sm: 24 },
+        top: { xs: 72, sm: 80 }, // logo abaixo da barra do topo
         width: { sm: 380 },
         alignItems: 'stretch',
         pointerEvents: 'none',
       }}
     >
+      {itens.map((n) => (
+        <Toast key={n.mensagemCliente?.chave ?? n.id} n={n} onAbrir={onAbrir} onLida={onLida} onFechar={onFechar} />
+      ))}
       {extras > 0 || itens.length > 1 ? (
         <Stack direction="row" spacing={1} sx={{ justifyContent: 'flex-end', pointerEvents: 'auto' }}>
           {extras > 0 ? (
@@ -73,9 +76,6 @@ export function ToastsNotificacoes({ itens, extras, onAbrir, onLida, onFechar, o
           </Button>
         </Stack>
       ) : null}
-      {itens.map((n) => (
-        <Toast key={n.mensagemCliente?.chave ?? n.id} n={n} onAbrir={onAbrir} onLida={onLida} onFechar={onFechar} />
-      ))}
     </Stack>
   );
 }

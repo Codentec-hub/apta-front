@@ -7,4 +7,5 @@ export interface User {
   perfil: Perfil;
   setor: { id: string; nome: string } | null;
   fotoEm?: string | null;
+  trocaObrigatoria?: boolean;
 }

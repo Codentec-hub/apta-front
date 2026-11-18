@@ -1,10 +1,12 @@
 'use client';
 
 import * as React from 'react';
+import RouterLink from 'next/link';
 import { useRouter } from 'next/navigation';
 import { zodResolver } from '@hookform/resolvers/zod';
 import Alert from '@mui/material/Alert';
 import Button from '@mui/material/Button';
+import Link from '@mui/material/Link';
 import CircularProgress from '@mui/material/CircularProgress';
 import FormControl from '@mui/material/FormControl';
 import FormHelperText from '@mui/material/FormHelperText';
@@ -17,6 +19,7 @@ import { Controller, useForm } from 'react-hook-form';
 import { z as zod } from 'zod';
 
 import { authClient } from '@/lib/auth/client';
+import { paths } from '@/paths';
 import { useUser } from '@/hooks/use-user';
 
 const schema = zod.object({
@@ -114,6 +117,9 @@ export function SignInForm(): React.JSX.Element {
               </FormControl>
             )}
           />
+          <Link component={RouterLink} href={paths.auth.esqueciSenha} variant="body2" sx={{ alignSelf: 'flex-end' }}>
+            Esqueci minha senha
+          </Link>
           {errors.root ? <Alert color="error">{errors.root.message}</Alert> : null}
           <Button
             disabled={isPending}

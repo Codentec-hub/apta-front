@@ -9,6 +9,7 @@ import Paper from '@mui/material/Paper';
 import Snackbar from '@mui/material/Snackbar';
 import Stack from '@mui/material/Stack';
 import Switch from '@mui/material/Switch';
+import Tooltip from '@mui/material/Tooltip';
 import Table from '@mui/material/Table';
 import TableBody from '@mui/material/TableBody';
 import TableCell from '@mui/material/TableCell';
@@ -16,11 +17,14 @@ import TableContainer from '@mui/material/TableContainer';
 import TableHead from '@mui/material/TableHead';
 import TableRow from '@mui/material/TableRow';
 import Typography from '@mui/material/Typography';
+import { KeyIcon } from '@phosphor-icons/react/dist/ssr/Key';
 import { PencilSimpleIcon } from '@phosphor-icons/react/dist/ssr/PencilSimple';
 import { PlusIcon } from '@phosphor-icons/react/dist/ssr/Plus';
 
 import { api } from '@/lib/api';
-import type { Perfil, Setor, Usuario } from '@/types/domain';
+import type { LinkAcesso, Perfil, Setor, Usuario } from '@/types/domain';
+
+import { LinkAcessoDialog } from './link-acesso-dialog';
 
 import { UsuarioFormDialog } from './usuario-form-dialog';
 
@@ -44,6 +48,20 @@ export function UsuariosView(): React.JSX.Element {
 
   const [dialogAberto, setDialogAberto] = React.useState(false);
   const [usuarioEmEdicao, setUsuarioEmEdicao] = React.useState<Usuario | null>(null);
+  const [link, setLink] = React.useState<{ usuario: Usuario; acesso: LinkAcesso } | null>(null);
+  const [gerando, setGerando] = React.useState<string | null>(null);
+
+  const gerarLink = React.useCallback(async (usuario: Usuario) => {
+    setGerando(usuario.id);
+    try {
+      const acesso = await api<LinkAcesso>(`/usuarios/${usuario.id}/link-acesso`, { method: 'POST', body: '{}' });
+      setLink({ usuario, acesso });
+    } catch (error) {
+      setErro(error instanceof Error ? error.message : 'Não foi possível gerar o link');
+    } finally {
+      setGerando(null);
+    }
+  }, []);
 
   const carregar = React.useCallback(() => {
     setCarregando(true);
@@ -60,6 +78,20 @@ export function UsuariosView(): React.JSX.Element {
     carregar();
   }, [carregar]);
 
+  // Vindo da notificação "esqueceu a senha" (?acesso=<id>): já gera o link.
+  const pedidoAcesso = React.useRef<string | null | undefined>(undefined);
+  React.useEffect(() => {
+    if (pedidoAcesso.current === undefined) {
+      pedidoAcesso.current = new URLSearchParams(globalThis.location.search).get('acesso');
+    }
+    const id = pedidoAcesso.current;
+    const alvo = id ? usuarios.find((u) => u.id === id) : null;
+    if (!alvo) return;
+    pedidoAcesso.current = null;
+    globalThis.history.replaceState(null, '', globalThis.location.pathname);
+    void gerarLink(alvo);
+  }, [usuarios, gerarLink]);
+
   function abrirNovo(): void {
     setUsuarioEmEdicao(null);
     setDialogAberto(true);
@@ -70,7 +102,8 @@ export function UsuariosView(): React.JSX.Element {
     setDialogAberto(true);
   }
 
-  function aoSalvar(usuario: Usuario): void {
+  function aoSalvar(usuario: Usuario, acesso?: LinkAcesso): void {
+    if (acesso) setLink({ usuario, acesso });
     setUsuarios((atual) => {
       const existe = atual.some((u) => u.id === usuario.id);
       const proximo = existe ? atual.map((u) => (u.id === usuario.id ? usuario : u)) : [...atual, usuario];
@@ -133,7 +166,16 @@ export function UsuariosView(): React.JSX.Element {
             ) : (
               usuarios.map((usuario) => (
                 <TableRow key={usuario.id} hover>
-                  <TableCell>{usuario.nome}</TableCell>
+                  <TableCell>
+                    <Stack direction="row" spacing={1} sx={{ alignItems: 'center', flexWrap: 'wrap', gap: 0.5 }}>
+                      <span>{usuario.nome}</span>
+                      {usuario.convitePendente ? (
+                        <Chip label="Convite pendente" size="small" color="warning" variant="outlined" />
+                      ) : usuario.trocaObrigatoria ? (
+                        <Chip label="Senha provisória" size="small" variant="outlined" />
+                      ) : null}
+                    </Stack>
+                  </TableCell>
                   <TableCell>{usuario.email}</TableCell>
                   <TableCell>{usuario.setor?.nome ?? '—'}</TableCell>
                   <TableCell>
@@ -148,9 +190,26 @@ export function UsuariosView(): React.JSX.Element {
                     <Switch checked={usuario.ativo} onChange={() => alternarAtivo(usuario)} size="small" />
                   </TableCell>
                   <TableCell align="right">
-                    <IconButton onClick={() => abrirEdicao(usuario)} size="small">
-                      <PencilSimpleIcon />
-                    </IconButton>
+                    {usuario.ativo ? (
+                      <Tooltip
+                        title={
+                          usuario.convitePendente
+                            ? 'Gerar link do convite (manda por e-mail se estiver ligado)'
+                            : 'Gerar link para criar nova senha (manda por e-mail se estiver ligado)'
+                        }
+                      >
+                        <span>
+                          <IconButton onClick={() => void gerarLink(usuario)} size="small" disabled={gerando === usuario.id}>
+                            <KeyIcon />
+                          </IconButton>
+                        </span>
+                      </Tooltip>
+                    ) : null}
+                    <Tooltip title="Editar">
+                      <IconButton onClick={() => abrirEdicao(usuario)} size="small">
+                        <PencilSimpleIcon />
+                      </IconButton>
+                    </Tooltip>
                   </TableCell>
                 </TableRow>
               ))
@@ -166,6 +225,8 @@ export function UsuariosView(): React.JSX.Element {
         onClose={() => setDialogAberto(false)}
         onSaved={aoSalvar}
       />
+
+      <LinkAcessoDialog usuario={link?.usuario ?? null} acesso={link?.acesso ?? null} onClose={() => setLink(null)} />
 
       <Snackbar open={Boolean(erro)} autoHideDuration={5000} onClose={() => setErro(null)}>
         <Alert onClose={() => setErro(null)} severity="error" sx={{ width: '100%' }}>

@@ -25,7 +25,18 @@ export interface Usuario {
   ativo: boolean;
   setorId: string | null;
   setor: Setor | null;
+  fotoEm?: string | null;
+  convitePendente?: boolean;
+  trocaObrigatoria?: boolean;
   createdAt: string;
+}
+
+/** Link de convite ou de redefinição de senha gerado para um usuário. */
+export interface LinkAcesso {
+  tipo: 'CONVITE' | 'REDEFINICAO';
+  link: string;
+  expiraEm: string;
+  emailEnviado: boolean;
 }
 
 export interface ClienteResponsavel {

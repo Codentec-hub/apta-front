@@ -212,7 +212,7 @@ function Caixa(): React.JSX.Element {
   );
 }
 
-function Preferencias(): React.JSX.Element {
+export function Preferencias(): React.JSX.Element {
   const [tipos, setTipos] = React.useState<PreferenciaTipo[] | null>(null);
   const [emailDisponivel, setEmailDisponivel] = React.useState(false);
   const [alterado, setAlterado] = React.useState(false);

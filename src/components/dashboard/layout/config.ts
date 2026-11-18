@@ -28,13 +28,13 @@ export const settingsNavItems = [
   { key: 'agentes', grupo: 'Comunicação com o cliente', perfis: ['ADMIN', 'GESTOR'], title: 'Agentes de IA', href: paths.dashboard.agentes, icon: 'robot' },
   { key: 'integracoes', grupo: 'Sistema', perfis: ['ADMIN', 'GESTOR'], title: 'Integrações', href: paths.dashboard.integracoes, icon: 'plugs-connected' },
   { key: 'auditoria', grupo: 'Sistema', perfis: ['ADMIN', 'GESTOR'], title: 'Auditoria', href: paths.dashboard.auditoria, icon: 'historico' },
+  { key: 'preferencias-notificacoes', grupo: 'Minha conta', title: 'Notificações', href: paths.dashboard.preferenciasNotificacoes, icon: 'sino' },
 ] satisfies NavItemConfig[];
 
 /** Rodapé do menu principal: um só item "Configurações" que abre a página com o menu acima. */
 export const rodapeNavItems = [
   {
     key: 'configuracoes',
-    perfis: ['ADMIN', 'GESTOR'],
     title: 'Configurações',
     href: paths.dashboard.configuracoes,
     icon: 'engrenagem',

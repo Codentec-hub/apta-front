@@ -1,5 +1,6 @@
 import type { Icon } from '@phosphor-icons/react/dist/lib/types';
 import { BankIcon } from '@phosphor-icons/react/dist/ssr/Bank';
+import { BellIcon } from '@phosphor-icons/react/dist/ssr/Bell';
 import { BuildingOfficeIcon } from '@phosphor-icons/react/dist/ssr/BuildingOffice';
 import { BuildingsIcon } from '@phosphor-icons/react/dist/ssr/Buildings';
 import { CalculatorIcon } from '@phosphor-icons/react/dist/ssr/Calculator';
@@ -43,4 +44,5 @@ export const navIcons = {
   engrenagem: GearSixIcon,
   funil: FunnelIcon,
   agenda: CalendarCheckIcon,
+  sino: BellIcon,
 } as Record<string, Icon>;

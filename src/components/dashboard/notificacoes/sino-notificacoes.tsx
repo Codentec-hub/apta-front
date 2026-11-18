@@ -189,7 +189,7 @@ export function SinoNotificacoes(): React.JSX.Element {
               <IconButton
                 size="small"
                 component={RouterLink}
-                href={`${paths.dashboard.notificacoes}?aba=preferencias`}
+                href={paths.dashboard.preferenciasNotificacoes}
                 onClick={() => setAberto(false)}
               >
                 <GearSixIcon />
